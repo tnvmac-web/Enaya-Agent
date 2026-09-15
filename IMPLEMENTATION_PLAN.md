@@ -81,9 +81,9 @@
 ### 2.2 Platform Adapters (Start with core 5)
 - [x] Telegram
 - [x] Discord
-- [ ] Slack
-- [ ] Matrix
-- [ ] Email (IMAP/SMTP)
+- [x] Slack
+- [x] Matrix
+- [x] Email (IMAP/SMTP)
 
 ### 2.3 Additional Platforms (Phase 2b)
 - [ ] WhatsApp (Baileys)
@@ -99,37 +99,37 @@
 
 ### 3.1 Voice Mode
 **File**: `src/enaya/voice/`
-- [ ] Real-time voice conversations
-- [ ] STT providers (local faster-whisper, Groq, OpenAI, ElevenLabs)
-- [ ] TTS providers (local, OpenAI, ElevenLabs, Mistral, xAI)
-- [ ] Wake word ("Hey Enaya")
-- [ ] Telegram/Discord voice channel support
+- [x] Real-time voice conversations
+- [x] STT providers (local faster-whisper, Groq, OpenAI, ElevenLabs)
+- [x] TTS providers (local, OpenAI, ElevenLabs, Mistral, xAI)
+- [x] Wake word ("Hey Enaya")
+- [x] Telegram/Discord voice channel support
 
 ### 3.2 Browser Automation
 **File**: `src/enaya/browser/`
-- [ ] CDP local Chromium
-- [ ] Browserbase cloud
-- [ ] Agent-browser facade
-- [ ] Form filling, scraping
-- [ ] Stealth modes
+- [x] CDP local Chromium
+- [x] Browserbase cloud
+- [x] Agent-browser facade
+- [x] Form filling, scraping
+- [x] Stealth modes
 
 ### 3.3 Vision
 **File**: `src/enaya/vision/`
-- [ ] Clipboard image paste
-- [ ] Multimodal analysis
-- [ ] Image attachment in chat
+- [x] Clipboard image paste
+- [x] Multimodal analysis
+- [x] Image attachment in chat
 
 ### 3.4 Image Generation
 **File**: `src/enaya/image_gen/`
-- [ ] FAL.ai integration (FLUX 2, GPT Image, etc.)
-- [ ] Model selection via `enaya tools`
-- [ ] Free tier support
+- [x] FAL.ai integration (FLUX 2, GPT Image, etc.)
+- [x] Model selection via `enaya tools`
+- [x] Free tier support
 
 ### 3.5 TTS/STT
 **File**: `src/enaya/tts/` and `src/enaya/stt/`
-- [ ] Multiple provider backends
-- [ ] Voice message transcription
-- [ ] Text-to-speech across platforms
+- [x] Multiple provider backends
+- [x] Voice message transcription
+- [x] Text-to-speech across platforms
 
 ---
 
