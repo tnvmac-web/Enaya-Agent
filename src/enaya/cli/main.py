@@ -349,6 +349,61 @@ def gateway_stop(ctx: click.Context, stop_all: bool):
 
 
 # =============================================================================
+# TUI Command
+# =============================================================================
+
+@cli.command()
+@click.pass_context
+def tui(ctx: click.Context):
+    """Launch the Textual TUI interface."""
+    try:
+        from enaya.tui.main import run_tui
+        run_tui()
+    except ImportError:
+        console.print("[red]Error:[/red] TUI dependencies not installed. Run: pip install enaya-agent[tui]")
+        sys.exit(1)
+
+
+# =============================================================================
+# Dashboard Command
+# =============================================================================
+
+@cli.command()
+@click.option("--host", default="0.0.0.0", help="Host to bind")
+@click.option("--port", default=8080, help="Port to bind")
+@click.pass_context
+def dashboard(ctx: click.Context, host: str, port: int):
+    """Launch the web dashboard."""
+    try:
+        import uvicorn
+        from enaya.dashboard.server import app
+        console.print(f"[green]Starting dashboard on http://{host}:{port}[/green]")
+        uvicorn.run(app, host=host, port=port)
+    except ImportError:
+        console.print("[red]Error:[/red] Dashboard dependencies not installed. Run: pip install enaya-agent[dashboard]")
+        sys.exit(1)
+
+
+# =============================================================================
+# API Server Command
+# =============================================================================
+
+@cli.command()
+@click.option("--host", default="0.0.0.0", help="Host to bind")
+@click.option("--port", default=8000, help="Port to bind")
+@click.pass_context
+def api_server(ctx: click.Context, host: str, port: int):
+    """Launch the OpenAI-compatible API server."""
+    try:
+        from enaya.api_server.main import run_api_server
+        console.print(f"[green]Starting API server on http://{host}:{port}[/green]")
+        run_api_server(host=host, port=port)
+    except ImportError:
+        console.print("[red]Error:[/red] API server dependencies not installed. Run: pip install enaya-agent[api]")
+        sys.exit(1)
+
+
+# =============================================================================
 # ACP Command
 # =============================================================================
 
@@ -358,7 +413,27 @@ def gateway_stop(ctx: click.Context, stop_all: bool):
 @click.pass_context
 def acp(ctx: click.Context, check: bool, setup: bool):
     """ACP server for IDE integration (VS Code, Zed, JetBrains)."""
-    console.print("[yellow]ACP server not yet implemented[/yellow]")
+    if check:
+        console.print("[yellow]Checking ACP dependencies...[/yellow]")
+        try:
+            import pydantic
+            console.print("[green]ACP dependencies OK[/green]")
+        except ImportError:
+            console.print("[red]Missing dependencies. Run: pip install enaya-agent[acp][/red]")
+            sys.exit(1)
+        return
+    
+    if setup:
+        console.print("[yellow]ACP setup not yet implemented[/yellow]")
+        return
+    
+    try:
+        from enaya.acp_adapter.server import run_acp_server
+        console.print("[green]Starting ACP server on stdio...[/green]")
+        run_acp_server()
+    except ImportError:
+        console.print("[red]Error:[/red] ACP dependencies not installed. Run: pip install enaya-agent[acp]")
+        sys.exit(1)
 
 
 # =============================================================================
