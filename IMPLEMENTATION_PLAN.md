@@ -12,6 +12,13 @@
 - [x] CLI Commands (chat, delegate, research, plan, model, setup, config)
 - [x] Skills System (5 bundled skills)
 - [x] Unit Tests (11 passing)
+- [x] **Phase 1: Core Interfaces**
+  - [x] TUI (Textual): Interactive terminal UI with chat, sessions, streaming
+  - [x] API Server: OpenAI-compatible FastAPI server (/v1/chat/completions, /v1/runs, /v1/models)
+  - [x] ACP Server: JSON-RPC over stdio for VS Code/Zed/JetBrains IDE integration
+  - [x] Dashboard: Web dashboard with chat, sessions, models, tools, gateway, memory, skills, settings
+  - [x] CLI commands: tui, dashboard, api_server, acp
+  - [x] Optional dependencies: tui, dashboard, api, acp, gateway, voice, image_gen, mcp
 
 ---
 
@@ -62,18 +69,18 @@
 
 ### 2.1 Gateway Core
 **File**: `src/enaya/gateway/`
-- [ ] GatewayRunner message dispatch
-- [ ] SessionStore (conversation persistence)
-- [ ] Delivery (reply, cron, home channel, cross-platform)
-- [ ] Authorization (allowlists, DM pairing)
-- [ ] Slash command dispatch
-- [ ] Hook system (gateway:startup, session:*, agent:*, command:*)
-- [ ] Cron ticking
-- [ ] Token locks, profile-scoped process tracking
+- [x] GatewayRunner message dispatch
+- [x] SessionStore (conversation persistence)
+- [x] Delivery (reply, cron, home channel, cross-platform)
+- [x] Authorization (allowlists, DM pairing)
+- [x] Slash command dispatch
+- [x] Hook system (gateway:startup, session:*, agent:*, command:*)
+- [x] Cron ticking
+- [x] Token locks, profile-scoped process tracking
 
 ### 2.2 Platform Adapters (Start with core 5)
-- [ ] Telegram
-- [ ] Discord
+- [x] Telegram
+- [x] Discord
 - [ ] Slack
 - [ ] Matrix
 - [ ] Email (IMAP/SMTP)
