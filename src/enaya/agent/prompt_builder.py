@@ -254,9 +254,7 @@ def load_soul_md(profile: str) -> str | None:
     # For Enaya, use ENAYA_HOME or same location
     enaya_home = Path(os.environ.get("ENAYA_HOME", hermes_home))
     profile_dir = (
-        enaya_home / "profiles" / profile
-        if (enaya_home / "profiles").exists()
-        else enaya_home
+        enaya_home / "profiles" / profile if (enaya_home / "profiles").exists() else enaya_home
     )
 
     for path in [profile_dir / "SOUL.md", enaya_home / "SOUL.md"]:
@@ -278,9 +276,7 @@ def load_memory_snapshot(profile: str) -> str:
     hermes_home = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes"))
     enaya_home = Path(os.environ.get("ENAYA_HOME", hermes_home))
     profile_dir = (
-        enaya_home / "profiles" / profile
-        if (enaya_home / "profiles").exists()
-        else enaya_home
+        enaya_home / "profiles" / profile if (enaya_home / "profiles").exists() else enaya_home
     )
 
     parts = []
@@ -363,9 +359,7 @@ def estimate_cache_savings(messages: list[dict]) -> dict:
             total_tokens += len(content) // 4
 
     return {
-            "cached_tokens": cached_tokens,
-            "total_tokens": total_tokens,
-            "savings_pct": (cached_tokens / total_tokens * 100)
-            if total_tokens > 0
-            else 0,
-        }
+        "cached_tokens": cached_tokens,
+        "total_tokens": total_tokens,
+        "savings_pct": (cached_tokens / total_tokens * 100) if total_tokens > 0 else 0,
+    }

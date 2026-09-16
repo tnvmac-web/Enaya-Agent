@@ -103,8 +103,7 @@ COMPARE_SOURCES_SCHEMA = {
     "function": {
         "name": "compare_sources",
         "description": (
-            "Compare multiple sources on the same topic. Returns "
-            "structured comparison table."
+            "Compare multiple sources on the same topic. Returns structured comparison table."
         ),
         "parameters": {
             "type": "object",
@@ -214,8 +213,7 @@ def extract_claims_tool(text: str, source: str, min_confidence: float = 0.5) -> 
                 }
             ],
             "instruction": (
-                "Extract all verifiable claims from the text. Return "
-                "filled claims_template."
+                "Extract all verifiable claims from the text. Return filled claims_template."
             ),
         }
     )

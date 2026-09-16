@@ -124,8 +124,7 @@ PAPER_ANALYZE_SCHEMA = {
                 "focus": {
                     "type": "string",
                     "description": (
-                        "Specific aspect to focus on (methodology, results, "
-                        "limitations, etc.)"
+                        "Specific aspect to focus on (methodology, results, limitations, etc.)"
                     ),
                 },
             },
@@ -197,8 +196,7 @@ def paper_analyze_tool(source: str, focus: str = None) -> str:
                 "focus": focus,
                 "word_count": len(full_text.split()),
                 "note": (
-                    "Full text extracted. Use with synthesis tools or "
-                    "provide to LLM for analysis."
+                    "Full text extracted. Use with synthesis tools or provide to LLM for analysis."
                 ),
             }
         )

@@ -373,25 +373,18 @@ IMAGE_GEN_TOOL_SCHEMA = {
     "function": {
         "name": "image_gen",
         "description": (
-            "Generate images using AI models (FLUX, DALL-E, Ideogram, "
-            "etc.) via FAL.ai or OpenAI."
+            "Generate images using AI models (FLUX, DALL-E, Ideogram, etc.) via FAL.ai or OpenAI."
         ),
         "parameters": {
             "type": "object",
             "properties": {
-                "prompt": {
-                    "type": "string",
-                    "description": "Image generation prompt"
-                },
+                "prompt": {"type": "string", "description": "Image generation prompt"},
                 "model": {
                     "type": "string",
                     "enum": [m.value for m in ImageModel],
                     "description": "Model to use",
                 },
-                "provider": {
-                    "type": "string",
-                    "description": "Provider (fal, openai)"
-                },
+                "provider": {"type": "string", "description": "Provider (fal, openai)"},
                 "width": {"type": "integer", "default": 1024},
                 "height": {"type": "integer", "default": 1024},
                 "num_images": {"type": "integer", "default": 1},

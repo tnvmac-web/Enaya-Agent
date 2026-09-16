@@ -29,9 +29,7 @@ class TaskDecomposer:
     def __init__(self, agent):
         self.agent = agent
 
-    def decompose(
-        self, goal: str, max_depth: int = 3, constraints: str = None
-    ) -> list[Subtask]:
+    def decompose(self, goal: str, max_depth: int = 3, constraints: str = None) -> list[Subtask]:
         """Decompose a goal into subtasks."""
         prompt = (
             "Decompose this goal into hierarchical subtasks:\n\n"

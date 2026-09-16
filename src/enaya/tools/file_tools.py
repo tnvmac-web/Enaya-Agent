@@ -21,17 +21,14 @@ READ_FILE_SCHEMA = {
     "function": {
         "name": "read_file",
         "description": (
-            "Read a text file with line numbers and pagination. Use this "
-            "instead of cat/head/tail."
+            "Read a text file with line numbers and pagination. Use this instead of cat/head/tail."
         ),
         "parameters": {
             "type": "object",
             "properties": {
                 "path": {
                     "type": "string",
-                    "description": (
-                        "Path to the file to read (absolute, relative, or ~/path)"
-                    ),
+                    "description": ("Path to the file to read (absolute, relative, or ~/path)"),
                 },
                 "offset": {
                     "type": "integer",
@@ -295,8 +292,7 @@ SEARCH_FILES_SCHEMA = {
                 "pattern": {
                     "type": "string",
                     "description": (
-                        "Regex pattern for content search, or glob pattern "
-                        "for file search"
+                        "Regex pattern for content search, or glob pattern for file search"
                     ),
                 },
                 "target": {
@@ -311,8 +307,7 @@ SEARCH_FILES_SCHEMA = {
                 "path": {
                     "type": "string",
                     "description": (
-                        "Directory or file to search in "
-                        "(default: current working directory)"
+                        "Directory or file to search in (default: current working directory)"
                     ),
                     "default": ".",
                 },
@@ -346,8 +341,7 @@ SEARCH_FILES_SCHEMA = {
                 "context": {
                     "type": "integer",
                     "description": (
-                        "Number of context lines before and after each match "
-                        "(grep mode only)"
+                        "Number of context lines before and after each match (grep mode only)"
                     ),
                     "default": 0,
                 },

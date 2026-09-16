@@ -563,9 +563,7 @@ class KanbanStore:
                 "SELECT * FROM columns WHERE board_id = ? ORDER BY order_num",
                 (board_id,),
             ).fetchall()
-            tasks = conn.execute(
-                "SELECT * FROM tasks WHERE board_id = ?", (board_id,)
-            ).fetchall()
+            tasks = conn.execute("SELECT * FROM tasks WHERE board_id = ?", (board_id,)).fetchall()
 
         # Group tasks by column
         tasks_by_column = {}

@@ -21,8 +21,7 @@ TERMINAL_SCHEMA = {
     "function": {
         "name": "terminal",
         "description": (
-            "Execute shell commands. Use for running commands, scripts, "
-            "and system operations."
+            "Execute shell commands. Use for running commands, scripts, and system operations."
         ),
         "parameters": {
             "type": "object",

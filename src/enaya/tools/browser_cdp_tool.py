@@ -53,8 +53,7 @@ BROWSER_CDP_SCHEMA = {
                 "cdp_endpoint": {
                     "type": "string",
                     "description": (
-                        "CDP WebSocket endpoint "
-                        "(e.g., ws://localhost:9222/devtools/browser/...)"
+                        "CDP WebSocket endpoint (e.g., ws://localhost:9222/devtools/browser/...)"
                     ),
                 },
                 "headless": {
@@ -108,9 +107,7 @@ class BrowserCDPManager:
 
             if cdp_endpoint:
                 # Connect to existing browser via CDP
-                self._browser = await self._playwright.chromium.connect_over_cdp(
-                    cdp_endpoint
-                )
+                self._browser = await self._playwright.chromium.connect_over_cdp(cdp_endpoint)
             else:
                 # Launch new browser with CDP enabled
                 self._browser = await self._playwright.chromium.launch(
@@ -198,10 +195,7 @@ class BrowserCDPManager:
             else:
                 import base64
 
-                return {
-                    "success": True,
-                    "screenshot_base64": base64.b64encode(screenshot).decode()
-                }
+                return {"success": True, "screenshot_base64": base64.b64encode(screenshot).decode()}
         except Exception as e:
             return {"success": False, "error": str(e)}
 
@@ -218,9 +212,7 @@ class BrowserCDPManager:
             # Note: This is simplified - real implementation would collect events
             return {
                 "success": True,
-                "message": (
-                    "Network logging enabled. Use CDP events for full logs."
-                ),
+                "message": ("Network logging enabled. Use CDP events for full logs."),
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -235,9 +227,7 @@ class BrowserCDPManager:
             await self._cdp_session.send("Console.enable")
             return {
                 "success": True,
-                "message": (
-                    "Console logging enabled. Use CDP events for full logs."
-                ),
+                "message": ("Console logging enabled. Use CDP events for full logs."),
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
