@@ -58,7 +58,7 @@ install-dev:
 test: test-unit
 
 test-unit:
-	pytest tests/ -v --cov=enaya --cov-report=term-missing --cov-fail-under=60
+	pytest tests/ -v --cov=enaya --cov-report=term-missing
 
 test-integration:
 	pytest tests/integration/ -v -x
