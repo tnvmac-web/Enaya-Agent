@@ -79,7 +79,7 @@ def chat(
         config["provider"] = provider
 
     agent_config = AgentConfig(
-        model=config.get("model", "openrouter:anthropic/claude-sonnet-4"),
+        model=config.get("model", "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free"),
         provider=config.get("provider"),
         max_turns=config.get("max_turns", 500),
         temperature=config.get("temperature", 0.7),
@@ -284,7 +284,7 @@ def research(ctx: click.Context, query: str, depth: str, sources: str):
     config = load_config(profile)
 
     agent_config = AgentConfig(
-        model=config.get("model", "openrouter:anthropic/claude-sonnet-4"),
+        model=config.get("model", "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free"),
         toolsets=["core", "research"],
         profile=profile,
         platform="cli",
@@ -310,7 +310,7 @@ def plan(ctx: click.Context, goal: str, complexity: str):
     config = load_config(profile)
 
     agent_config = AgentConfig(
-        model=config.get("model", "openrouter:anthropic/claude-sonnet-4"),
+        model=config.get("model", "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free"),
         toolsets=["core", "planning"],
         profile=profile,
         platform="cli",
@@ -486,6 +486,86 @@ def cron():
 def cron_add(ctx: click.Context, name: str, schedule: str, prompt: str):
     """Add a cron job."""
     console.print("[yellow]Cron not yet implemented[/yellow]")
+
+
+# =============================================================================
+# Kanban Command
+# =============================================================================
+
+@cli.group()
+def kanban():
+    """Kanban board management."""
+    pass
+
+
+@kanban.command("create")
+@click.argument("name")
+@click.option("--description", "-d", default="", help="Board description")
+@click.pass_context
+def kanban_create(ctx: click.Context, name: str, description: str):
+    """Create a new kanban board."""
+    from enaya.kanban.manager import kanban_create_board
+    board_id = kanban_create_board(name, description)
+    console.print(f"[green]Created board: {board_id}[/green]")
+
+
+@kanban.command("list")
+@click.pass_context
+def kanban_list(ctx: click.Context):
+    """List all kanban boards."""
+    from enaya.kanban.manager import kanban_list_boards
+    boards = kanban_list_boards()
+    if not boards:
+        console.print("[yellow]No boards found[/yellow]")
+        return
+    for board in boards:
+        console.print(f"  {board['id']}: {board['name']} ({board['columns']} columns)")
+
+
+@kanban.command("add-task")
+@click.argument("board_id")
+@click.argument("column")
+@click.argument("title")
+@click.option("--description", "-d", default="", help="Task description")
+@click.option("--priority", "-p", type=click.Choice(["low", "medium", "high", "critical"]), default="medium")
+@click.option("--assignee", "-a", default=None, help="Assignee name")
+@click.pass_context
+def kanban_add_task(ctx: click.Context, board_id: str, column: str, title: str, description: str, priority: str, assignee: str):
+    """Add a task to a board."""
+    from enaya.kanban.manager import kanban_add_task
+    task_id = kanban_add_task(board_id, column, title, description, priority, assignee)
+    if task_id:
+        console.print(f"[green]Created task: {task_id}[/green]")
+    else:
+        console.print("[red]Failed to create task[/red]")
+
+
+@kanban.command("move")
+@click.argument("task_id")
+@click.argument("column")
+@click.pass_context
+def kanban_move(ctx: click.Context, task_id: str, column: str):
+    """Move a task to a different column."""
+    from enaya.kanban.manager import kanban_move_task
+    success = kanban_move_task(task_id, column)
+    if success:
+        console.print(f"[green]Moved task {task_id} to {column}[/green]")
+    else:
+        console.print("[red]Failed to move task[/red]")
+
+
+@kanban.command("view")
+@click.argument("board_id")
+@click.pass_context
+def kanban_view(ctx: click.Context, board_id: str):
+    """View a kanban board."""
+    from enaya.kanban.manager import kanban_board_view
+    view = kanban_board_view(board_id)
+    console.print(f"Board: {view.get('name', board_id)}")
+    for column in view.get('columns', []):
+        console.print(f"  {column['name']} ({column['status']}): {len(column['tasks'])} tasks")
+        for task in column['tasks']:
+            console.print(f"    - {task['id'][:8]}: {task['title']} [{task['priority']}]")
 
 
 # =============================================================================

@@ -350,6 +350,15 @@ class AIAgent:
 
     def _parse_chat_completions_response(self, response) -> dict:
         """Parse OpenAI Chat Completions response."""
+        # Handle None or empty response
+        if not response or not response.choices:
+            return {
+                "content": "",
+                "tool_calls": [],
+                "finish_reason": "error",
+                "error": "Empty or invalid response from API",
+            }
+        
         choice = response.choices[0]
         result = {"content": choice.message.content or ""}
         if choice.message.tool_calls:

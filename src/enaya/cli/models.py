@@ -27,6 +27,7 @@ _PROVIDER_MODELS: dict[str, dict[str, dict[str, Any]]] = {
         "meta-llama/llama-3.1-70b-instruct": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
         "mistralai/mistral-large": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
         "nvidia/nemotron-3-ultra": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
+        "nvidia/nemotron-3-ultra-550b-a55b:free": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
     },
 
     "openai": {

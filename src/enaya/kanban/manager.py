@@ -555,7 +555,17 @@ class KanbanStore:
                     "order": c.order,
                     "wip_limit": c.wip_limit,
                     "color": c.color,
-                    "tasks": tasks_by_column.get(c.id, []),
+                    "tasks": [
+                        {
+                            "id": t.id,
+                            "title": t.title,
+                            "description": t.description,
+                            "priority": t.priority.name,
+                            "assignee": t.assignee,
+                            "created_at": t.created_at,
+                        }
+                        for t in tasks_by_column.get(c.id, [])
+                    ],
                 }
                 for c in board.columns
             ],
@@ -696,7 +706,7 @@ def kanban_list_boards() -> list[dict]:
 
 def kanban_add_task(board_id: str, column: str, title: str, description: str = "", priority: str = "medium", assignee: str = None) -> str:
     manager = KanbanManager()
-    board = manager.manager.store.get_board(board_id)
+    board = manager.store.get_board(board_id)
     if not board:
         print(f"Board not found: {board_id}")
         return ""
@@ -715,12 +725,12 @@ def kanban_add_task(board_id: str, column: str, title: str, description: str = "
 def kanban_move_task(task_id: str, column: str) -> bool:
     manager = KanbanManager()
     # Find board containing task
-    task = manager.manager.store.get_task(task_id)
+    task = manager.store.get_task(task_id)
     if not task:
         print(f"Task not found: {task_id}")
         return False
     
-    board = manager.manager.store.get_board(task.board_id)
+    board = manager.store.get_board(task.board_id)
     if not board:
         return False
     
