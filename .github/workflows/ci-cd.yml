@@ -185,6 +185,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v4
       - name: Evaluate job results
         run: |
           python3 .github/scripts/evaluate_checks.py
