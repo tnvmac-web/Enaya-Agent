@@ -12,10 +12,9 @@ from pathlib import Path
 import click
 from rich.console import Console
 
-from enaya.run_agent import create_agent, AIAgent, AgentConfig
-from enaya.cli.config import load_config, save_config, CONFIG_DEFAULTS
+from enaya.cli.config import load_config, save_config
 from enaya.cli.runtime_provider import resolve_runtime_provider
-
+from enaya.run_agent import AgentConfig, AIAgent
 
 console = Console()
 
@@ -376,6 +375,7 @@ def dashboard(ctx: click.Context, host: str, port: int):
     """Launch the web dashboard."""
     try:
         import uvicorn
+
         from enaya.dashboard.server import app
         console.print(f"[green]Starting dashboard on http://{host}:{port}[/green]")
         uvicorn.run(app, host=host, port=port)
@@ -422,11 +422,11 @@ def acp(ctx: click.Context, check: bool, setup: bool):
             console.print("[red]Missing dependencies. Run: pip install enaya-agent[acp][/red]")
             sys.exit(1)
         return
-    
+
     if setup:
         console.print("[yellow]ACP setup not yet implemented[/yellow]")
         return
-    
+
     try:
         from enaya.acp_adapter.server import run_acp_server
         console.print("[green]Starting ACP server on stdio...[/green]")

@@ -10,15 +10,16 @@ import importlib.util
 import json
 import os
 import sys
-import yaml
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
-from enaya.tools.registry import registry
+import yaml
+
 from enaya.gateway.runner import GatewayRunner
-
+from enaya.tools.registry import registry
 
 # =============================================================================
 # Plugin Manifest
@@ -38,13 +39,13 @@ class PluginManifest:
     dependencies: list[str] = field(default_factory=list)
     python_requires: str = ">=3.11"
     entry_point: str = "plugin_init"  # function to call on load
-    
+
     @classmethod
-    def from_file(cls, path: Path) -> "PluginManifest":
+    def from_file(cls, path: Path) -> PluginManifest:
         with open(path) as f:
             data = yaml.safe_load(f)
         return cls(**data)
-    
+
     def to_file(self, path: Path) -> None:
         with open(path, "w") as f:
             yaml.dump(self.__dict__, f, default_flow_style=False)
@@ -56,7 +57,7 @@ class PluginManifest:
 
 class PluginContext:
     """Context provided to plugins for registration."""
-    
+
     def __init__(self, plugin_dir: Path, plugin_name: str):
         self.plugin_dir = plugin_dir
         self.plugin_name = plugin_name
@@ -64,14 +65,14 @@ class PluginContext:
         self._state_dir.mkdir(parents=True, exist_ok=True)
         self._data_dir = plugin_dir / "data"
         self._skills_dir = plugin_dir / "skills"
-    
+
     @property
     def state_dir(self) -> Path:
         return self._state_dir
-    
+
     def data_path(self, filename: str) -> Path:
         return self._data_dir / filename
-    
+
     def register_tool(
         self,
         name: str,
@@ -90,23 +91,23 @@ class PluginContext:
             check_fn=check_fn,
             is_async=is_async,
         )
-    
+
     def register_hook(self, event: str, handler: Callable) -> None:
         """Register a gateway hook."""
         # This would integrate with GatewayRunner's hook system
         pass
-    
+
     def register_skill(self, name: str, skill_content: str) -> None:
         """Register a skill."""
         skill_dir = self._skills_dir / name
         skill_dir.mkdir(parents=True, exist_ok=True)
         (skill_dir / "SKILL.md").write_text(skill_content)
-    
+
     def register_cli_command(self, command: Callable) -> None:
         """Register a CLI command."""
         # This would integrate with Click CLI
         pass
-    
+
     def store_settings(self, key: str, value: Any) -> None:
         """Store plugin settings."""
         settings_file = self._state_dir / "settings.json"
@@ -115,14 +116,14 @@ class PluginContext:
             settings = json.loads(settings_file.read_text())
         settings[key] = value
         settings_file.write_text(json.dumps(settings, indent=2))
-    
+
     def get_settings(self, key: str, default: Any = None) -> Any:
         """Get plugin settings."""
         settings_file = self._state_dir / "settings.json"
         if settings_file.exists():
             return json.loads(settings_file.read_text()).get(key, default)
         return default
-    
+
     def get_or_create_shared(self, key: str, factory: Callable) -> Any:
         """Thread-safe lazy singleton."""
         # Simplified - real implementation would use threading.Lock
@@ -135,16 +136,16 @@ class PluginContext:
 
 class PluginBase(ABC):
     """Base class for plugins."""
-    
+
     def __init__(self, context: PluginContext):
         self.context = context
         self.name = context.plugin_name
-    
+
     @abstractmethod
     def initialize(self) -> None:
         """Initialize plugin."""
         pass
-    
+
     def shutdown(self) -> None:
         """Cleanup on shutdown."""
         pass
@@ -156,7 +157,7 @@ class PluginBase(ABC):
 
 class PluginManager:
     """Manages plugin discovery, loading, and lifecycle."""
-    
+
     def __init__(self, profile: str = "default"):
         self.profile = profile
         self.plugins: dict[str, PluginBase] = {}
@@ -165,7 +166,7 @@ class PluginManager:
             Path.cwd() / ".enaya" / "plugins",             # Project plugins
             Path(__file__).parent.parent / "plugins",      # Bundled plugins
         ]
-    
+
     def discover_plugins(self) -> list[Path]:
         """Discover all plugin directories."""
         plugins = []
@@ -175,35 +176,35 @@ class PluginManager:
                     if plugin_dir.is_dir() and (plugin_dir / "PLUGIN.yaml").exists():
                         plugins.append(plugin_dir)
         return plugins
-    
-    def load_plugin(self, plugin_dir: Path) -> Optional[PluginBase]:
+
+    def load_plugin(self, plugin_dir: Path) -> PluginBase | None:
         """Load a single plugin."""
         try:
             manifest = PluginManifest.from_file(plugin_dir / "PLUGIN.yaml")
-            
+
             # Check if already loaded
             if manifest.name in self.plugins:
                 print(f"Plugin {manifest.name} already loaded, skipping")
                 return self.plugins[manifest.name]
-            
+
             # Create context
             context = PluginContext(plugin_dir, manifest.name)
-            
+
             # Load plugin module
             entry_file = plugin_dir / "plugin.py"
             if not entry_file.exists():
                 # Try __init__.py
                 entry_file = plugin_dir / "__init__.py"
-            
+
             if not entry_file.exists():
                 print(f"Plugin {manifest.name} has no entry point")
                 return None
-            
+
             spec = importlib.util.spec_from_file_location(manifest.name, entry_file)
             module = importlib.util.module_from_spec(spec)
             sys.modules[manifest.name] = module
             spec.loader.exec_module(module)
-            
+
             # Call entry point
             if hasattr(module, manifest.entry_point):
                 plugin_instance = getattr(module, manifest.entry_point)(context)
@@ -212,18 +213,18 @@ class PluginManager:
             else:
                 print(f"Plugin {manifest.name} has no valid entry point")
                 return None
-            
+
             # Initialize
             plugin_instance.initialize()
-            
+
             self.plugins[manifest.name] = plugin_instance
             print(f"Loaded plugin: {manifest.name} v{manifest.version}")
             return plugin_instance
-            
+
         except Exception as e:
             print(f"Failed to load plugin {plugin_dir}: {e}")
             return None
-    
+
     def load_all(self) -> list[PluginBase]:
         """Load all discovered plugins."""
         loaded = []
@@ -232,7 +233,7 @@ class PluginManager:
             if plugin:
                 loaded.append(plugin)
         return loaded
-    
+
     def unload_plugin(self, name: str) -> bool:
         """Unload a plugin."""
         if name in self.plugins:
@@ -240,10 +241,10 @@ class PluginManager:
             del self.plugins[name]
             return True
         return False
-    
-    def get_plugin(self, name: str) -> Optional[PluginBase]:
+
+    def get_plugin(self, name: str) -> PluginBase | None:
         return self.plugins.get(name)
-    
+
     def list_plugins(self) -> list[dict]:
         return [
             {"name": p.name, "version": getattr(p, "version", "unknown")}
@@ -258,11 +259,11 @@ class PluginManager:
 # Tool Plugin
 class ToolPlugin(PluginBase):
     """Plugin that registers tools."""
-    
+
     def initialize(self) -> None:
         # Override in subclass
         pass
-    
+
     def register_tool(self, name: str, toolset: str, schema: dict, handler: Callable, check_fn: Callable = lambda: True) -> None:
         self.context.register_tool(name, toolset, schema, handler, check_fn)
 
@@ -270,10 +271,10 @@ class ToolPlugin(PluginBase):
 # Hook Plugin
 class HookPlugin(PluginBase):
     """Plugin that registers gateway hooks."""
-    
+
     def initialize(self) -> None:
         pass
-    
+
     def register_hook(self, event: str, handler: Callable) -> None:
         self.context.register_hook(event, handler)
 
@@ -281,10 +282,10 @@ class HookPlugin(PluginBase):
 # Skill Plugin
 class SkillPlugin(PluginBase):
     """Plugin that bundles skills."""
-    
+
     def initialize(self) -> None:
         pass
-    
+
     def register_skill(self, name: str, skill_content: str) -> None:
         self.context.register_skill(name, skill_content)
 
@@ -292,10 +293,10 @@ class SkillPlugin(PluginBase):
 # Platform Plugin
 class PlatformPlugin(PluginBase):
     """Plugin that adds a messaging platform adapter."""
-    
+
     def initialize(self) -> None:
         pass
-    
+
     def register_adapter(self, runner, adapter_class) -> None:
         # This would be called by the runner
         pass
@@ -304,7 +305,7 @@ class PlatformPlugin(PluginBase):
 # Memory Provider Plugin
 class MemoryProviderPlugin(PluginBase):
     """Plugin that provides a memory backend."""
-    
+
     def initialize(self) -> None:
         pass
 
@@ -312,7 +313,7 @@ class MemoryProviderPlugin(PluginBase):
 # Context Engine Plugin
 class ContextEnginePlugin(PluginBase):
     """Plugin that provides a context compression engine."""
-    
+
     def initialize(self) -> None:
         pass
 
@@ -329,19 +330,19 @@ def plugin_doctor(plugin_path: str) -> dict:
         "errors": [],
         "warnings": [],
     }
-    
+
     if not path.exists():
         result["errors"].append("Plugin directory does not exist")
         return result
-    
+
     manifest_path = path / "PLUGIN.yaml"
     if not manifest_path.exists():
         result["errors"].append("PLUGIN.yaml not found")
         return result
-    
+
     try:
         manifest = PluginManifest.from_file(manifest_path)
-        
+
         # Check required fields
         if not manifest.name:
             result["errors"].append("Plugin name is required")
@@ -349,30 +350,30 @@ def plugin_doctor(plugin_path: str) -> dict:
             result["errors"].append("Plugin version is required")
         if not manifest.description:
             result["warnings"].append("Description is recommended")
-        
+
         # Check entry point
         entry_file = path / "plugin.py"
         if not entry_file.exists():
             entry_file = path / "__init__.py"
         if not entry_file.exists():
             result["errors"].append("No entry point (plugin.py or __init__.py)")
-        
+
         # Check dependencies
         for dep in manifest.dependencies:
             result["warnings"].append(f"Dependency: {dep}")
-        
+
         result["valid"] = len(result["errors"]) == 0
-        
+
     except Exception as e:
         result["errors"].append(f"Failed to parse manifest: {e}")
-    
+
     return result
 
 
 def create_plugin_skeleton(plugin_dir: Path, name: str, kind: str = "tool") -> None:
     """Create a new plugin skeleton."""
     plugin_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Manifest
     manifest = PluginManifest(
         name=name,
@@ -386,7 +387,7 @@ def create_plugin_skeleton(plugin_dir: Path, name: str, kind: str = "tool") -> N
         },
     )
     manifest.to_file(plugin_dir / "PLUGIN.yaml")
-    
+
     # Entry point
     (plugin_dir / "plugin.py").write_text(f'''#!/usr/bin/env python3
 """
@@ -401,10 +402,10 @@ class Plugin(PluginBase):
         print(f"{name} plugin initialized")
         # Register tools, hooks, skills here
 ''')
-    
+
     # README
     (plugin_dir / "README.md").write_text(f"# {name}\n\n{name} plugin for Enaya Agent.\n")
-    
+
     print(f"Created plugin skeleton at {plugin_dir}")
 
 
@@ -412,7 +413,7 @@ class Plugin(PluginBase):
 # Global Plugin Manager Instance
 # =============================================================================
 
-_plugin_manager: Optional[PluginManager] = None
+_plugin_manager: PluginManager | None = None
 
 
 def get_plugin_manager(profile: str = "default") -> PluginManager:
@@ -431,7 +432,7 @@ def load_plugins(profile: str = "default") -> list:
 
 if __name__ == "__main__":
     import sys
-    
+
     if len(sys.argv) > 1:
         if sys.argv[1] == "doctor":
             path = sys.argv[2] if len(sys.argv) > 2 else "."

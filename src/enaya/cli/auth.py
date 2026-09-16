@@ -7,7 +7,6 @@ Mirrors Hermes Agent's hermes_cli/auth.py exactly.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
 
 
 @dataclass
@@ -18,16 +17,16 @@ class OAuthConfig:
     auth_url: str
     token_url: str
     scopes: list[str] = field(default_factory=list)
-    refresh_url: Optional[str] = None
+    refresh_url: str | None = None
 
 
 @dataclass
 class ProviderConfig:
     """Provider configuration metadata."""
     env_vars: list[str] = field(default_factory=list)  # Priority order
-    base_url: Optional[str] = None
+    base_url: str | None = None
     api_mode: str = "chat_completions"  # chat_completions, codex_responses, anthropic_messages
-    oauth_config: Optional[OAuthConfig] = None
+    oauth_config: OAuthConfig | None = None
     fallback_models: list[str] = field(default_factory=list)
     supports_streaming: bool = True
     supports_tools: bool = True

@@ -6,10 +6,10 @@ Serves the web dashboard and provides API endpoints.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
 
 app = FastAPI(title="Enaya Agent Dashboard")
 
@@ -29,10 +29,10 @@ async def dashboard():
 async def chat_endpoint(message: str, model: str = "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free", stream: bool = False):
     """Chat API endpoint for the dashboard."""
     from enaya.run_agent import create_agent
-    
+
     agent = create_agent(model=model)
     result = agent.run_conversation(message)
-    
+
     if stream:
         # Return as SSE
         from fastapi.responses import StreamingResponse
@@ -40,7 +40,7 @@ async def chat_endpoint(message: str, model: str = "openrouter:nvidia/nemotron-3
             yield f"data: {result}\n\n"
             yield "data: [DONE]\n\n"
         return StreamingResponse(generate(), media_type="text/event-stream")
-    
+
     return {"response": result, "model": model}
 
 
@@ -53,11 +53,11 @@ async def websocket_chat(websocket: WebSocket):
             data = await websocket.receive_json()
             message = data.get("message", "")
             model = data.get("model", "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free")
-            
+
             from enaya.run_agent import create_agent
             agent = create_agent(model=model)
             result = agent.run_conversation(message)
-            
+
             await websocket.send_json({"response": result})
     except WebSocketDisconnect:
         pass

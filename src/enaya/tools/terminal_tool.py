@@ -7,13 +7,10 @@ Execute shell commands.
 from __future__ import annotations
 
 import json
-import subprocess
 import os
-import sys
-from typing import Any
+import subprocess
 
 from enaya.tools.registry import registry
-
 
 # =============================================================================
 # Terminal Tool
@@ -46,7 +43,7 @@ def terminal_tool(command: str, cwd: str = None, timeout: int = 60, shell: bool 
     """Execute a shell command."""
     try:
         workdir = cwd or os.getcwd()
-        
+
         result = subprocess.run(
             command,
             shell=shell,
@@ -55,14 +52,14 @@ def terminal_tool(command: str, cwd: str = None, timeout: int = 60, shell: bool 
             text=True,
             timeout=timeout,
         )
-        
+
         return json.dumps({
             "success": result.returncode == 0,
             "stdout": result.stdout,
             "stderr": result.stderr,
             "returncode": result.returncode,
         })
-        
+
     except subprocess.TimeoutExpired:
         return json.dumps({
             "success": False,

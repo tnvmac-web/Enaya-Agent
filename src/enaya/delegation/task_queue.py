@@ -10,7 +10,6 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
 
 
 class TaskPriority(Enum):
@@ -27,15 +26,15 @@ class QueuedTask:
     task: str
     context: str
     priority: TaskPriority = TaskPriority.NORMAL
-    model: Optional[str] = None
+    model: str | None = None
     max_iterations: int = 50
     toolsets: list[str] = field(default_factory=list)
     dependencies: list[str] = field(default_factory=list)  # Task IDs that must complete first
     metadata: dict = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.now)
-    scheduled_at: Optional[datetime] = None
+    scheduled_at: datetime | None = None
 
-    def __lt__(self, other: "QueuedTask") -> bool:
+    def __lt__(self, other: QueuedTask) -> bool:
         """For heap ordering: lower priority value = higher priority."""
         if self.priority.value != other.priority.value:
             return self.priority.value < other.priority.value
@@ -80,7 +79,7 @@ class TaskQueue:
         heapq.heappush(self._queue, queued)
         return task_id
 
-    def dequeue_ready(self) -> Optional[QueuedTask]:
+    def dequeue_ready(self) -> QueuedTask | None:
         """Get next task whose dependencies are satisfied."""
         # Find first task with satisfied dependencies
         for i, task in enumerate(self._queue):

@@ -3,11 +3,12 @@ Enaya Agent - Basic Tests
 """
 
 import pytest
-from enaya.tools.registry import registry
-from enaya.model_tools import collect_tool_schemas, build_function_schema
-from enaya.cli.config import load_config, CONFIG_DEFAULTS
+
 from enaya.cli.auth import PROVIDER_REGISTRY, resolve_provider
+from enaya.cli.config import CONFIG_DEFAULTS, load_config
 from enaya.cli.models import _PROVIDER_MODELS, resolve_model_alias
+from enaya.model_tools import build_function_schema
+from enaya.tools.registry import registry
 
 
 class TestToolRegistry:

@@ -6,9 +6,6 @@ Mirrors Hermes Agent's model_tools.py exactly.
 
 from __future__ import annotations
 
-import json
-from typing import Any, Optional
-
 from enaya.tools.registry import registry
 
 
@@ -25,8 +22,8 @@ def handle_function_call(
     toolsets: list[str],
     disabled_tools: list[str],
     task_id: str,
-    approval_callback: Optional[callable] = None,
-    progress_callback: Optional[callable] = None,
+    approval_callback: callable | None = None,
+    progress_callback: callable | None = None,
 ) -> str:
     """
     Main tool dispatch function.

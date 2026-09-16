@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
 
 
 @dataclass
@@ -50,7 +49,7 @@ Return a plan with phases, each containing tasks that can run in parallel.
 Include dependencies, effort estimates, and milestones."""
 
         result = self.agent.run_conversation(prompt)
-        
+
         # Parse into ExecutionPlan
         return ExecutionPlan(
             goal="",

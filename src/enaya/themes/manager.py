@@ -6,14 +6,10 @@ Customizable themes with live reload across all surfaces.
 
 from __future__ import annotations
 
-import json
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
 
 import yaml
-
 
 # =============================================================================
 # Theme Data Classes
@@ -26,31 +22,31 @@ class ThemePalette:
     background: str = "#0d1117"
     surface: str = "#161b22"
     surface_elevated: str = "#21262d"
-    
+
     # Text colors
     text_primary: str = "#e6edf3"
     text_secondary: str = "#8b949e"
     text_muted: str = "#6e7681"
-    
+
     # Accent colors
     accent: str = "#00d4aa"  # Teal
     accent_hover: str = "#00b894"
     accent_muted: str = "#00d4aa33"
-    
+
     # Status colors
     success: str = "#3fb950"
     warning: str = "#d29922"
     error: str = "#f85149"
     info: str = "#58a6ff"
-    
+
     # Border
     border: str = "#30363d"
     border_focus: str = "#00d4aa"
-    
+
     # Code
     code_background: str = "#0d1117"
     code_text: str = "#e6edf3"
-    
+
     # Selection
     selection: str = "#00d4aa44"
 
@@ -84,11 +80,11 @@ class Theme:
     description: str = ""
     author: str = ""
     version: str = "1.0.0"
-    
+
     palette: ThemePalette = field(default_factory=ThemePalette)
     typography: ThemeTypography = field(default_factory=ThemeTypography)
     spacing: ThemeSpacing = field(default_factory=ThemeSpacing)
-    
+
     # Surface-specific overrides
     cli_overrides: dict = field(default_factory=dict)
     tui_overrides: dict = field(default_factory=dict)
@@ -107,7 +103,7 @@ BUILTIN_THEMES = {
         description="Clean dark theme with teal accents",
         author="Enaya Team",
     ),
-    
+
     "light": Theme(
         name="light",
         display_name="Enaya Light",
@@ -134,7 +130,7 @@ BUILTIN_THEMES = {
             selection="#006b5b44",
         ),
     ),
-    
+
     "synthwave": Theme(
         name="synthwave",
         display_name="Synthwave",
@@ -164,7 +160,7 @@ BUILTIN_THEMES = {
             font_family="'Orbitron', 'JetBrains Mono', monospace",
         ),
     ),
-    
+
     "dracula": Theme(
         name="dracula",
         display_name="Dracula",
@@ -191,7 +187,7 @@ BUILTIN_THEMES = {
             selection="#bd93f944",
         ),
     ),
-    
+
     "nord": Theme(
         name="nord",
         display_name="Nord",
@@ -218,7 +214,7 @@ BUILTIN_THEMES = {
             selection="#88c0d044",
         ),
     ),
-    
+
     "github": Theme(
         name="github",
         display_name="GitHub Dark",
@@ -254,37 +250,37 @@ BUILTIN_THEMES = {
 
 class ThemeManager:
     """Manages themes with live reload across surfaces."""
-    
+
     def __init__(self, themes_dir: Path = None):
         self.themes_dir = themes_dir or (Path.home() / ".enaya" / "skins")
         self.themes_dir.mkdir(parents=True, exist_ok=True)
-        
+
         self.themes: dict[str, Theme] = {}
-        self.current_theme: Optional[Theme] = None
+        self.current_theme: Theme | None = None
         self._listeners: list[Callable] = []
-        
+
         self._load_builtin_themes()
         self._load_custom_themes()
-        
+
         # Set default
         if "default" in self.themes:
             self.current_theme = self.themes["default"]
-    
+
     def _load_builtin_themes(self) -> None:
         for name, theme in BUILTIN_THEMES.items():
             self.themes[name] = theme
-    
+
     def _load_custom_themes(self) -> None:
         for theme_file in self.themes_dir.glob("*.yaml"):
             try:
                 with open(theme_file) as f:
                     data = yaml.safe_load(f)
-                
+
                 # Parse theme
                 palette = ThemePalette(**data.get("palette", {}))
                 typography = ThemeTypography(**data.get("typography", {}))
                 spacing = ThemeSpacing(**data.get("spacing", {}))
-                
+
                 theme = Theme(
                     name=data.get("name", theme_file.stem),
                     display_name=data.get("display_name", theme_file.stem),
@@ -299,24 +295,24 @@ class ThemeManager:
                     dashboard_overrides=data.get("dashboard_overrides", {}),
                     desktop_overrides=data.get("desktop_overrides", {}),
                 )
-                
+
                 self.themes[theme.name] = theme
             except Exception as e:
                 print(f"Failed to load theme {theme_file}: {e}")
-    
-    def get_theme(self, name: str) -> Optional[Theme]:
+
+    def get_theme(self, name: str) -> Theme | None:
         return self.themes.get(name)
-    
+
     def set_theme(self, name: str) -> bool:
         if name in self.themes:
             self.current_theme = self.themes[name]
             self._notify_listeners()
             return True
         return False
-    
-    def get_current(self) -> Optional[Theme]:
+
+    def get_current(self) -> Theme | None:
         return self.current_theme
-    
+
     def list_themes(self) -> list[dict]:
         return [
             {
@@ -328,11 +324,11 @@ class ThemeManager:
             }
             for t in self.themes.values()
         ]
-    
+
     def create_custom_theme(self, name: str, base_theme: str = "default") -> Theme:
         """Create a new custom theme based on an existing one."""
         base = self.themes.get(base_theme, self.themes["default"])
-        
+
         # Deep copy
         import copy
         new_theme = copy.deepcopy(base)
@@ -341,14 +337,14 @@ class ThemeManager:
         new_theme.description = f"Custom theme based on {base_theme}"
         new_theme.author = "User"
         new_theme.version = "1.0.0"
-        
+
         # Save to file
         theme_file = self.themes_dir / f"{name}.yaml"
         self.save_theme(new_theme, theme_file)
-        
+
         self.themes[name] = new_theme
         return new_theme
-    
+
     def save_theme(self, theme: Theme, path: Path) -> None:
         """Save theme to YAML file."""
         data = {
@@ -365,41 +361,41 @@ class ThemeManager:
             "dashboard_overrides": theme.dashboard_overrides,
             "desktop_overrides": theme.desktop_overrides,
         }
-        
+
         with open(path, "w") as f:
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)
-    
+
     def update_color(self, key: str, value: str) -> bool:
         """Update a single color in the current theme."""
         if not self.current_theme:
             return False
-        
+
         if hasattr(self.current_theme.palette, key):
             setattr(self.current_theme.palette, key, value)
             self._notify_listeners()
             return True
         return False
-    
+
     def add_listener(self, callback: Callable) -> None:
         """Add a listener for theme changes."""
         self._listeners.append(callback)
-    
+
     def remove_listener(self, callback: Callable) -> None:
         if callback in self._listeners:
             self._listeners.remove(callback)
-    
+
     def _notify_listeners(self) -> None:
         for listener in self._listeners:
             try:
                 listener(self.current_theme)
             except Exception:
                 pass
-    
+
     def get_css_variables(self) -> dict[str, str]:
         """Get CSS variables for web surfaces."""
         if not self.current_theme:
             return {}
-        
+
         p = self.current_theme.palette
         return {
             "--bg-primary": p.background,
@@ -421,12 +417,12 @@ class ThemeManager:
             "--code-text": p.code_text,
             "--selection": p.selection,
         }
-    
+
     def get_rich_style(self) -> dict[str, str]:
         """Get Rich library styles for CLI/TUI."""
         if not self.current_theme:
             return {}
-        
+
         p = self.current_theme.palette
         return {
             "primary": p.accent,
@@ -448,7 +444,7 @@ def skin_list() -> None:
     """List available themes."""
     manager = ThemeManager()
     themes = manager.list_themes()
-    
+
     print("Available themes:")
     for t in themes:
         marker = " *" if t["name"] == manager.current_theme.name else ""
@@ -497,14 +493,14 @@ def skin_export(name: str, output: str) -> None:
     if not theme:
         print(f"Theme not found: {name}")
         return
-    
+
     output_path = Path(output)
     manager.save_theme(theme, output_path)
     print(f"Exported {name} to {output}")
 
 
 # Global instance
-_theme_manager: Optional[ThemeManager] = None
+_theme_manager: ThemeManager | None = None
 
 
 def get_theme_manager() -> ThemeManager:

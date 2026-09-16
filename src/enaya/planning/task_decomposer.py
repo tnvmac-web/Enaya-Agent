@@ -6,7 +6,6 @@ Hierarchical task breakdown for complex goals.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass
@@ -49,7 +48,7 @@ Return a structured list of subtasks with:
 Focus on creating independent, parallelizable subtasks where possible."""
 
         result = self.agent.run_conversation(prompt)
-        
+
         # Parse result into Subtask objects
         # Simplified - real impl would parse structured output
         return []
@@ -58,7 +57,7 @@ Focus on creating independent, parallelizable subtasks where possible."""
         """Estimate total effort and critical path."""
         effort_map = {"low": 1, "medium": 3, "high": 5}
         total = sum(effort_map.get(s.estimated_effort, 1) for s in subtasks)
-        
+
         # Find critical path (simplified)
         return {
             "total_effort_points": total,

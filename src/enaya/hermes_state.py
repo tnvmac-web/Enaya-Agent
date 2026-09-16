@@ -12,10 +12,10 @@ import threading
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from enaya.run_agent import AIAgent
+    pass
 
 
 class SessionStore:
@@ -160,8 +160,8 @@ class SessionStore:
         platform: str = "cli",
         chat_type: str = "private",
         chat_id: str = "local",
-        parent_session_id: Optional[str] = None,
-        lineage_id: Optional[str] = None,
+        parent_session_id: str | None = None,
+        lineage_id: str | None = None,
     ) -> None:
         """Create a new session."""
         now = time.time()
@@ -209,7 +209,7 @@ class SessionStore:
                     now,
                 ))
 
-    def load_session(self, session_id: str) -> Optional[list[dict]]:
+    def load_session(self, session_id: str) -> list[dict] | None:
         """Load conversation history from session."""
         with self._transaction() as conn:
             cursor = conn.execute("""
@@ -263,7 +263,7 @@ class SessionStore:
 
             return [dict(row) for row in cursor]
 
-    def get_session_info(self, session_id: str) -> Optional[dict]:
+    def get_session_info(self, session_id: str) -> dict | None:
         """Get session metadata."""
         with self._transaction() as conn:
             cursor = conn.execute("""

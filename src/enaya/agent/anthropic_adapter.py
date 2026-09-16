@@ -7,7 +7,6 @@ Mirrors Hermes Agent's agent/anthropic_adapter.py exactly.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
 
 from enaya.run_agent import AIAgent
 
@@ -22,7 +21,6 @@ def anthropic_messages_call(
     Make an Anthropic Messages API call.
     Translates OpenAI-format messages to Anthropic format.
     """
-    import anthropic
 
     client = agent._get_client()
 

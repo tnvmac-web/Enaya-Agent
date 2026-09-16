@@ -5,12 +5,10 @@ Collect and synthesize subagent results.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Optional
 
-from enaya.delegation.orchestrator import DelegationOrchestrator, SubagentStatus
+from enaya.delegation.orchestrator import DelegationOrchestrator
 
 
 @dataclass
@@ -18,7 +16,7 @@ class AggregatedResult:
     """Aggregated result from multiple subagents."""
     query: str
     subagent_results: list[dict] = field(default_factory=list)
-    synthesis: Optional[str] = None
+    synthesis: str | None = None
     conflicts: list[dict] = field(default_factory=list)
     gaps: list[str] = field(default_factory=list)
     confidence: float = 0.0
@@ -114,7 +112,7 @@ Subagent Results:
             prompt += f"\n--- Subagent {r['subagent_id']} ---\nTask: {r['task']}\nResult: {r['result']}\n"
 
         if conflicts:
-            prompt += f"\nConflicts Detected:\n"
+            prompt += "\nConflicts Detected:\n"
             for c in conflicts:
                 prompt += f"- {c['topic']}: {len(c['positions'])} differing positions\n"
 

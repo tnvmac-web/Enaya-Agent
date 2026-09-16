@@ -6,14 +6,12 @@ Core component for multi-agent orchestration.
 
 from __future__ import annotations
 
-import json
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Optional
 from enum import Enum
 
-from enaya.run_agent import AIAgent, AgentConfig
+from enaya.run_agent import AgentConfig, AIAgent
 
 
 class SubagentStatus(Enum):
@@ -34,13 +32,13 @@ class SubagentTask:
     max_iterations: int
     toolsets: list[str]
     status: SubagentStatus = SubagentStatus.PENDING
-    result: Optional[str] = None
-    error: Optional[str] = None
+    result: str | None = None
+    error: str | None = None
     created_at: datetime = field(default_factory=datetime.now)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     steer_messages: list[str] = field(default_factory=list)
-    agent: Optional[AIAgent] = None
+    agent: AIAgent | None = None
 
 
 class DelegationOrchestrator:

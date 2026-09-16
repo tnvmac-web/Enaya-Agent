@@ -7,11 +7,12 @@ Mirrors Hermes Agent's tools/registry.py exactly.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from enaya.run_agent import AIAgent
+    pass
 
 
 @dataclass
@@ -60,7 +61,7 @@ class ToolRegistry:
         if name not in self._toolsets[toolset]:
             self._toolsets[toolset].append(name)
 
-    def get(self, name: str) -> Optional[ToolDef]:
+    def get(self, name: str) -> ToolDef | None:
         """Get tool definition by name."""
         return self._tools.get(name)
 
@@ -90,8 +91,8 @@ class ToolRegistry:
         toolsets: list[str],
         disabled_tools: list[str],
         task_id: str,
-        approval_callback: Optional[Callable] = None,
-        progress_callback: Optional[Callable] = None,
+        approval_callback: Callable | None = None,
+        progress_callback: Callable | None = None,
     ) -> str:
         """
         Dispatch a tool call to its handler.
@@ -157,9 +158,19 @@ class ToolRegistry:
         # Import all tool modules to trigger registration
         # Order matters for dependencies
         try:
-            from enaya.tools import file_tools, web_tools, terminal_tool, code_execution_tool, delegate_tool, mcp_tool
             # Enaya-specific tools
-            from enaya.tools import research_tools, planning_tools, delegation_tools, synthesis_tools
+            from enaya.tools import (
+                code_execution_tool,
+                delegate_tool,
+                delegation_tools,
+                file_tools,
+                mcp_tool,
+                planning_tools,
+                research_tools,
+                synthesis_tools,
+                terminal_tool,
+                web_tools,
+            )
         except ImportError:
             pass  # Tools not yet implemented
 

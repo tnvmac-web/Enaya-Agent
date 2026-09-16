@@ -8,25 +8,21 @@ Mirrors Hermes Agent's run_agent.py architecture exactly.
 
 from __future__ import annotations
 
-import asyncio
 import json
-import os
-import sys
 import uuid
-from contextlib import contextmanager
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Callable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-from enaya.agent.prompt_builder import build_system_prompt
 from enaya.agent.context_compressor import ContextCompressor
-from enaya.tools.registry import registry, discover_builtin_tools
-from enaya.model_tools import handle_function_call, collect_tool_schemas
+from enaya.agent.prompt_builder import build_system_prompt
 from enaya.cli.runtime_provider import resolve_runtime_provider
 from enaya.hermes_state import SessionStore
+from enaya.model_tools import collect_tool_schemas, handle_function_call
+from enaya.tools.registry import discover_builtin_tools
 
 if TYPE_CHECKING:
-    from enaya.agent.conversation_loop import run_conversation
+    pass
 
 
 # =============================================================================
@@ -37,14 +33,14 @@ if TYPE_CHECKING:
 class AgentConfig:
     """Configuration for AIAgent instance."""
     model: str = "openrouter:anthropic/claude-sonnet-4"
-    provider: Optional[str] = None
-    base_url: Optional[str] = None
-    api_key: Optional[str] = None
+    provider: str | None = None
+    base_url: str | None = None
+    api_key: str | None = None
     api_mode: str = "chat_completions"
     max_turns: int = 500
     temperature: float = 0.7
     top_p: float = 1.0
-    system_prompt: Optional[str] = None
+    system_prompt: str | None = None
     fallback_providers: list[tuple[str, str]] = field(default_factory=list)
     toolsets: list[str] = field(default_factory=lambda: ["core"])
     disabled_tools: list[str] = field(default_factory=list)
@@ -52,7 +48,7 @@ class AgentConfig:
     compression_protect_last_n: int = 20
     prompt_caching: bool = True
     prompt_caching_ttl: str = "5m"
-    session_id: Optional[str] = None
+    session_id: str | None = None
     profile: str = "default"
     platform: str = "cli"
     chat_type: str = "private"
@@ -87,15 +83,15 @@ class AIAgent:
         self,
         config: AgentConfig,
         *,
-        tool_progress_callback: Optional[ToolProgressCallback] = None,
-        thinking_callback: Optional[ThinkingCallback] = None,
-        reasoning_callback: Optional[ReasoningCallback] = None,
-        clarify_callback: Optional[ClarifyCallback] = None,
-        step_callback: Optional[StepCallback] = None,
-        stream_delta_callback: Optional[StreamDeltaCallback] = None,
-        tool_gen_callback: Optional[ToolGenCallback] = None,
-        status_callback: Optional[StatusCallback] = None,
-        approval_callback: Optional[Callable[[str, dict], bool]] = None,
+        tool_progress_callback: ToolProgressCallback | None = None,
+        thinking_callback: ThinkingCallback | None = None,
+        reasoning_callback: ReasoningCallback | None = None,
+        clarify_callback: ClarifyCallback | None = None,
+        step_callback: StepCallback | None = None,
+        stream_delta_callback: StreamDeltaCallback | None = None,
+        tool_gen_callback: ToolGenCallback | None = None,
+        status_callback: StatusCallback | None = None,
+        approval_callback: Callable[[str, dict], bool] | None = None,
     ):
         self.config = config
         self.tool_progress_callback = tool_progress_callback
@@ -127,8 +123,8 @@ class AIAgent:
         self.session_id = config.session_id or str(uuid.uuid4())
         self.session_store = SessionStore(profile=config.profile)
         self.conversation_history: list[dict] = []
-        self._system_prompt_cached: Optional[str] = None
-        self._system_prompt_hash: Optional[str] = None
+        self._system_prompt_cached: str | None = None
+        self._system_prompt_hash: str | None = None
 
         # Compression
         self.compressor = ContextCompressor(
@@ -152,10 +148,10 @@ class AIAgent:
         self,
         user_input: str,
         *,
-        session_id: Optional[str] = None,
+        session_id: str | None = None,
         resume: bool = False,
-        prefill: Optional[str] = None,
-        ephemeral_system_prompt: Optional[str] = None,
+        prefill: str | None = None,
+        ephemeral_system_prompt: str | None = None,
     ) -> str:
         """
         Run a full conversation turn (or multiple turns with tool calling).
@@ -174,8 +170,8 @@ class AIAgent:
         self,
         user_input: str,
         *,
-        system_prompt: Optional[str] = None,
-        prefill: Optional[str] = None,
+        system_prompt: str | None = None,
+        prefill: str | None = None,
     ) -> str:
         """
         Run a single turn without history, persistence, or compression.
@@ -240,7 +236,6 @@ class AIAgent:
 
     def _chat_completions_call(self, messages: list[dict], *, stream: bool = False) -> dict:
         """OpenAI Chat Completions format."""
-        from openai import OpenAI
 
         client = self._get_client()
         kwargs = self._build_api_kwargs(messages, stream=stream)
@@ -253,7 +248,6 @@ class AIAgent:
 
     def _codex_responses_call(self, messages: list[dict], *, stream: bool = False) -> dict:
         """OpenAI Responses API (stateful)."""
-        from openai import OpenAI
 
         client = self._get_client()
         kwargs = self._build_responses_kwargs(messages, stream=stream)
@@ -358,7 +352,7 @@ class AIAgent:
                 "finish_reason": "error",
                 "error": "Empty or invalid response from API",
             }
-        
+
         choice = response.choices[0]
         result = {"content": choice.message.content or ""}
         if choice.message.tool_calls:
@@ -519,7 +513,7 @@ class AIAgent:
 
 def create_agent(
     model: str = "openrouter:anthropic/claude-sonnet-4",
-    provider: Optional[str] = None,
+    provider: str | None = None,
     **kwargs,
 ) -> AIAgent:
     """Create an AIAgent with sensible defaults."""

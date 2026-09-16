@@ -10,9 +10,6 @@ import sqlite3
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
-
-from enaya.hermes_state import SessionStore
 
 
 @dataclass

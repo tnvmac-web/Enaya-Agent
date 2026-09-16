@@ -7,15 +7,12 @@ Execute Python code in sandboxed environment.
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 import tempfile
-import subprocess
-import os
-from pathlib import Path
-from typing import Any
 
 from enaya.tools.registry import registry
-
 
 # =============================================================================
 # Code Execution Tool
@@ -50,7 +47,7 @@ def execute_code_tool(code: str, timeout: int = 30, capture_output: bool = True)
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, prefix='enaya_exec_') as f:
             f.write(code)
             temp_file = f.name
-        
+
         try:
             # Run the code in a subprocess
             result = subprocess.run(
@@ -60,14 +57,14 @@ def execute_code_tool(code: str, timeout: int = 30, capture_output: bool = True)
                 timeout=timeout,
                 cwd=tempfile.gettempdir(),
             )
-            
+
             return json.dumps({
                 "success": result.returncode == 0,
                 "stdout": result.stdout,
                 "stderr": result.stderr,
                 "returncode": result.returncode,
             })
-            
+
         except subprocess.TimeoutExpired:
             return json.dumps({
                 "success": False,
@@ -90,7 +87,7 @@ def execute_code_tool(code: str, timeout: int = 30, capture_output: bool = True)
                 os.unlink(temp_file)
             except:
                 pass
-                
+
     except Exception as e:
         return json.dumps({"success": False, "error": f"Failed to execute code: {str(e)}"})
 

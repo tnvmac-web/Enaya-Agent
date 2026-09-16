@@ -5,16 +5,10 @@ Animated mascots that react to agent activity across CLI, TUI, and desktop.
 """
 
 from __future__ import animations
+
 import asyncio
-import os
-import random
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Optional
-
-from enaya.gateway.runner import GatewayRunner
-
+from dataclasses import dataclass
 
 # =============================================================================
 # Pet Data Classes
@@ -46,29 +40,29 @@ class PetAnimation:
 
 class PetBase(ABC):
     """Base class for pet mascots."""
-    
+
     def __init__(self, name: str):
         self.name = name
         self.state = PetState(name=name)
         self._running = False
-        self._animation_task: Optional[asyncio.Task] = None
+        self._animation_task: asyncio.Task | None = None
         self._listeners: list[Callable] = []
-    
+
     @abstractmethod
     def get_idle_frames(self) -> list[str]:
         """Get idle animation frames."""
         pass
-    
+
     @abstractmethod
     def get_mood_frames(self, mood: str) -> list[str]:
         """Get frames for a specific mood."""
         pass
-    
+
     @abstractmethod
     def get_action_frames(self, action: str) -> list[str]:
         """Get frames for a specific action."""
         pass
-    
+
     def get_frame(self, mood: str = None, action: str = None) -> str:
         """Get current frame based on state."""
         if action:
@@ -77,20 +71,20 @@ class PetBase(ABC):
             frames = self.get_mood_frames(mood)
         else:
             frames = self.get_idle_frames()
-        
+
         if not frames:
             frames = self.get_idle_frames()
-        
+
         # Simple frame selection based on time
         import time
         frame_idx = int(time.time() * 10) % len(frames)
         return frames[frame_idx]
-    
+
     async def start(self) -> None:
         """Start pet animation loop."""
         self._running = True
         self._animation_task = asyncio.create_task(self._animation_loop())
-    
+
     async def stop(self) -> None:
         """Stop pet animation."""
         self._running = False
@@ -100,13 +94,13 @@ class PetBase(ABC):
                 await self._animation_task
             except asyncio.CancelledError:
                 pass
-    
+
     async def _animation_loop(self) -> None:
         """Main animation loop."""
         while self._running:
             # Update state based on time
             self._update_state()
-            
+
             # Notify listeners
             frame = self.get_frame(mood=self.state.mood)
             for listener in self._listeners:
@@ -114,22 +108,22 @@ class PetBase(ABC):
                     listener(self, frame, self.state)
                 except Exception:
                     pass
-            
+
             await asyncio.sleep(0.1)
-    
+
     def _update_state(self) -> None:
         """Update pet state over time."""
         import time
         now = time.time()
-        
+
         # Decrease energy over time
         if self.state.energy > 0:
             self.state.energy = max(0, self.state.energy - 0.001)
-        
+
         # Increase hunger over time
         if self.state.hunger < 1:
             self.state.hunger = min(1, self.state.hunger + 0.0005)
-        
+
         # Auto-mood changes
         if self.state.energy < 0.2:
             self.state.mood = "sleeping"
@@ -137,20 +131,20 @@ class PetBase(ABC):
             self.state.mood = "sad"
         elif self.state.energy > 0.8 and self.state.hunger < 0.3:
             self.state.mood = "happy"
-    
+
     def add_listener(self, callback: Callable) -> None:
         """Add state change listener."""
         self._listeners.append(callback)
-    
+
     def remove_listener(self, callback: Callable) -> None:
         if callback in self._listeners:
             self._listeners.remove(callback)
-    
+
     def interact(self, interaction: str) -> dict:
         """Handle user interaction."""
         import time
         self.state.last_interaction = time.time()
-        
+
         if interaction == "pet":
             self.state.mood = "happy"
             self.state.energy = min(1, self.state.energy + 0.1)
@@ -167,15 +161,15 @@ class PetBase(ABC):
             self.state.mood = "thinking"
             self.state.energy = max(0, self.state.energy - 0.05)
             self.state.xp += 1
-        
+
         # Level up check
         new_level = (self.state.xp // 100) + 1
         if new_level > self.state.level:
             self.state.level = new_level
             return {"leveled_up": True, "new_level": new_level}
-        
+
         return {"leveled_up": False, "level": self.state.level}
-    
+
     def get_status(self) -> dict:
         """Get current pet status."""
         return {
@@ -195,14 +189,14 @@ class PetBase(ABC):
 
 class EnayaBot(PetBase):
     """Default Enaya bot mascot."""
-    
+
     def get_idle_frames(self) -> list[str]:
         return [
             "🤖",
             "🤖 ",
             " 🤖",
         ]
-    
+
     def get_mood_frames(self, mood: str) -> list[str]:
         frames = {
             "happy": ["🤖😊", "🤖😄", "🤖😃"],
@@ -213,7 +207,7 @@ class EnayaBot(PetBase):
             "working": ["🤖⚙️", "🤖🔧", "🤖⚡"],
         }
         return frames.get(mood, self.get_idle_frames())
-    
+
     def get_action_frames(self, action: str) -> list[str]:
         frames = {
             "pet": ["🤖😊", "🤖😍", "🤖🥰"],
@@ -226,14 +220,14 @@ class EnayaBot(PetBase):
 
 class CodeCat(PetBase):
     """Code cat mascot."""
-    
+
     def get_idle_frames(self) -> list[str]:
         return [
             "🐱",
             "🐱 ",
             " 🐱",
         ]
-    
+
     def get_mood_frames(self, mood: str) -> list[str]:
         frames = {
             "happy": ["🐱😺", "🐱😸", "🐱😹"],
@@ -244,7 +238,7 @@ class CodeCat(PetBase):
             "working": ["🐱⌨️", "🐱🖥️", "🐱💻"],
         }
         return frames.get(mood, self.get_idle_frames())
-    
+
     def get_action_frames(self, action: str) -> list[str]:
         frames = {
             "pet": ["🐱😺", "🐱😽", "🐱😻"],
@@ -257,14 +251,14 @@ class CodeCat(PetBase):
 
 class RocketRaccoon(PetBase):
     """Rocket raccoon mascot."""
-    
+
     def get_idle_frames(self) -> list[str]:
         return [
             "🦝",
             "🦝 ",
             " 🦝",
         ]
-    
+
     def get_mood_frames(self, mood: str) -> list[str]:
         frames = {
             "happy": ["🦝😃", "🦝😄", "🦝😁"],
@@ -275,7 +269,7 @@ class RocketRaccoon(PetBase):
             "working": ["🦝🔧", "🦝⚙️", "🦝🛠️"],
         }
         return frames.get(mood, self.get_idle_frames())
-    
+
     def get_action_frames(self, action: str) -> list[str]:
         frames = {
             "pet": ["🦝😊", "🦝🤗", "🦝😍"],
@@ -288,14 +282,14 @@ class RocketRaccoon(PetBase):
 
 class TerminalTurtle(PetBase):
     """Terminal turtle mascot."""
-    
+
     def get_idle_frames(self) -> list[str]:
         return [
             "🐢",
             "🐢 ",
             " 🐢",
         ]
-    
+
     def get_mood_frames(self, mood: str) -> list[str]:
         frames = {
             "happy": ["🐢😊", "🐢😄", "🐢😃"],
@@ -306,7 +300,7 @@ class TerminalTurtle(PetBase):
             "working": ["🐢⌨️", "🐢💻", "🐢🖥️"],
         }
         return frames.get(mood, self.get_idle_frames())
-    
+
     def get_action_frames(self, action: str) -> list[str]:
         frames = {
             "pet": ["🐢😊", "🐢😽", "🐢😻"],
@@ -323,7 +317,7 @@ class TerminalTurtle(PetBase):
 
 class PetManager:
     """Manages pet mascots across surfaces."""
-    
+
     def __init__(self):
         self.pets: dict[str, PetBase] = {
             "enaya": EnayaBot("Enaya"),
@@ -331,49 +325,49 @@ class PetManager:
             "raccoon": RocketRaccoon("Rocket"),
             "turtle": TerminalTurtle("Turtle"),
         }
-        self.active_pet: Optional[PetBase] = self.pets["enaya"]
+        self.active_pet: PetBase | None = self.pets["enaya"]
         self._listeners: list[Callable] = []
-    
-    def get_pet(self, name: str) -> Optional[PetBase]:
+
+    def get_pet(self, name: str) -> PetBase | None:
         return self.pets.get(name)
-    
+
     def set_active(self, name: str) -> bool:
         if name in self.pets:
             self.active_pet = self.pets[name]
             return True
         return False
-    
-    def get_active(self) -> Optional[PetBase]:
+
+    def get_active(self) -> PetBase | None:
         return self.active_pet
-    
+
     def list_pets(self) -> list[dict]:
         return [
             {"name": name, "active": pet == self.active_pet}
             for name, pet in self.pets.items()
         ]
-    
+
     async def start_all(self) -> None:
         for pet in self.pets.values():
             await pet.start()
-    
+
     async def stop_all(self) -> None:
         for pet in self.pets.values():
             await pet.stop()
-    
+
     def interact(self, interaction: str) -> dict:
         if self.active_pet:
             return self.active_pet.interact(interaction)
         return {"error": "No active pet"}
-    
+
     def get_status(self) -> dict:
         if self.active_pet:
             return self.active_pet.get_status()
         return {"error": "No active pet"}
-    
+
     def add_listener(self, callback: Callable) -> None:
         for pet in self.pets.values():
             pet.add_listener(callback)
-    
+
     def get_frame(self) -> str:
         if self.active_pet:
             return self.active_pet.get_frame(mood=self.active_pet.state.mood)
@@ -384,7 +378,7 @@ class PetManager:
 # CLI Integration
 # =============================================================================
 
-_pet_manager: Optional[PetManager] = None
+_pet_manager: PetManager | None = None
 
 
 def get_pet_manager() -> PetManager:

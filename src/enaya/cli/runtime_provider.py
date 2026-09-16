@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
-from enaya.cli.auth import ProviderConfig, PROVIDER_REGISTRY, _PROVIDER_ALIASES
+from enaya.cli.auth import _PROVIDER_ALIASES, PROVIDER_REGISTRY
 from enaya.cli.models import _PROVIDER_MODELS
 
 
@@ -19,8 +19,8 @@ class RuntimeProvider:
     """Resolved provider configuration at runtime."""
     provider: str
     model: str
-    base_url: Optional[str]
-    api_key: Optional[str]
+    base_url: str | None
+    api_key: str | None
     api_mode: str
     source: str  # "cli", "config", "env", "default"
     metadata: dict = None
@@ -31,10 +31,10 @@ class RuntimeProvider:
 
 
 def resolve_runtime_provider(
-    provider: Optional[str] = None,
-    model: Optional[str] = None,
-    base_url: Optional[str] = None,
-    api_key: Optional[str] = None,
+    provider: str | None = None,
+    model: str | None = None,
+    base_url: str | None = None,
+    api_key: str | None = None,
 ) -> RuntimeProvider:
     """
     Resolve provider configuration at runtime.

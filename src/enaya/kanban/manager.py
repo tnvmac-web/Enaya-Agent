@@ -6,20 +6,14 @@ SQLite-backed task board for multi-agent coordination.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 import sqlite3
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
-
-from enaya.hermes_state import SessionStore
-
 
 # =============================================================================
 # Kanban Data Classes
@@ -51,13 +45,13 @@ class KanbanTask:
     description: str = ""
     status: TaskStatus = TaskStatus.BACKLOG
     priority: TaskPriority = TaskPriority.MEDIUM
-    assignee: Optional[str] = None  # agent name or user
+    assignee: str | None = None  # agent name or user
     labels: list[str] = field(default_factory=list)
-    due_date: Optional[float] = None
+    due_date: float | None = None
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
-    started_at: Optional[float] = None
-    completed_at: Optional[float] = None
+    started_at: float | None = None
+    completed_at: float | None = None
     metadata: dict = field(default_factory=dict)
 
 
@@ -69,7 +63,7 @@ class KanbanColumn:
     name: str
     status: TaskStatus
     order: int
-    wip_limit: Optional[int] = None
+    wip_limit: int | None = None
     color: str = "#58a6ff"
 
 
@@ -92,26 +86,26 @@ class KanbanBoard:
 
 class KanbanStore:
     """SQLite-backed Kanban storage."""
-    
+
     def __init__(self, profile: str = "default"):
         self.profile = profile
         self.db_path = self._get_db_path()
         self._init_db()
-    
+
     def _get_db_path(self) -> Path:
         enaya_home = Path(os.environ.get("ENAYA_HOME", Path.home() / ".enaya"))
         if self.profile != "default":
             enaya_home = enaya_home / "profiles" / self.profile
         enaya_home.mkdir(parents=True, exist_ok=True)
         return enaya_home / "kanban.db"
-    
+
     def _get_connection(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
         return conn
-    
+
     def _init_db(self) -> None:
         with self._get_connection() as conn:
             # Boards
@@ -126,7 +120,7 @@ class KanbanStore:
                     metadata TEXT
                 )
             """)
-            
+
             # Columns
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS columns (
@@ -140,7 +134,7 @@ class KanbanStore:
                     FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE CASCADE
                 )
             """)
-            
+
             # Tasks
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS tasks (
@@ -163,28 +157,28 @@ class KanbanStore:
                     FOREIGN KEY (column_id) REFERENCES columns(id) ON DELETE CASCADE
                 )
             """)
-            
+
             # Indexes
             conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_board ON tasks(board_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_column ON tasks(column_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON tasks(assignee)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
-    
+
     def _get_connection(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
         return conn
-    
+
     # =============================================================================
     # Board Operations
     # =============================================================================
-    
+
     def create_board(self, name: str, description: str = "", owner: str = "") -> KanbanBoard:
         board_id = str(uuid.uuid4())[:12]
         now = time.time()
-        
+
         board = KanbanBoard(
             id=board_id,
             name=name,
@@ -193,7 +187,7 @@ class KanbanStore:
             created_at=now,
             updated_at=now,
         )
-        
+
         # Add default columns
         default_columns = [
             ("backlog", "Backlog", TaskStatus.BACKLOG, 0),
@@ -202,28 +196,28 @@ class KanbanStore:
             ("review", "Review", TaskStatus.REVIEW, 3),
             ("done", "Done", TaskStatus.DONE, 4),
         ]
-        
+
         with self._get_connection() as conn:
             conn.execute("""
                 INSERT INTO boards (id, name, description, owner, created_at, updated_at, metadata)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (board_id, name, description, owner, now, now, "{}"))
-            
+
             for i, (col_id, name, status, order) in enumerate(default_columns):
                 col_uuid = str(uuid.uuid4())[:12]
                 conn.execute("""
                     INSERT INTO columns (id, board_id, name, status, order_num, color)
                     VALUES (?, ?, ?, ?, ?, ?)
                 """, (col_uuid, board_id, name, status.value, order, "#58a6ff"))
-        
+
         return self.get_board(board_id)
-    
-    def get_board(self, board_id: str) -> Optional[KanbanBoard]:
+
+    def get_board(self, board_id: str) -> KanbanBoard | None:
         with self._get_connection() as conn:
             row = conn.execute("SELECT * FROM boards WHERE id = ?", (board_id,)).fetchone()
             if not row:
                 return None
-            
+
             board = KanbanBoard(
                 id=row["id"],
                 name=row["name"],
@@ -233,7 +227,7 @@ class KanbanStore:
                 updated_at=row["updated_at"],
                 metadata=json.loads(row["metadata"]) if row["metadata"] else {},
             )
-            
+
             # Load columns
             cols = conn.execute("SELECT * FROM columns WHERE board_id = ? ORDER BY order_num", (board_id,)).fetchall()
             board.columns = [
@@ -248,36 +242,36 @@ class KanbanStore:
                 )
                 for c in cols
             ]
-            
+
             return board
-    
+
     def list_boards(self) -> list[KanbanBoard]:
         with self._get_connection() as conn:
             rows = conn.execute("SELECT * FROM boards ORDER BY updated_at DESC").fetchall()
             return [self.get_board(r["id"]) for r in rows]
-    
+
     def delete_board(self, board_id: str) -> bool:
         with self._get_connection() as conn:
             cursor = conn.execute("DELETE FROM boards WHERE id = ?", (board_id,))
             return cursor.rowcount > 0
-    
+
     # =============================================================================
     # Column Operations
     # =============================================================================
-    
+
     def add_column(self, board_id: str, name: str, status: TaskStatus, color: str = "#58a6ff") -> KanbanColumn:
         column_id = str(uuid.uuid4())[:12]
-        
+
         with self._get_connection() as conn:
             # Get max order
             max_order = conn.execute("SELECT MAX(order_num) FROM columns WHERE board_id = ?", (board_id,)).fetchone()
             order = (max_order[0] or -1) + 1
-            
+
             conn.execute("""
                 INSERT INTO columns (id, board_id, name, status, order_num, color)
                 VALUES (?, ?, ?, ?, ?, ?)
             """, (column_id, board_id, name, status.value, order, color))
-        
+
         return KanbanColumn(
             id=column_id,
             board_id=board_id,
@@ -286,7 +280,7 @@ class KanbanStore:
             order=order,
             color=color,
         )
-    
+
     def update_column(self, column_id: str, **kwargs) -> bool:
         with self._get_connection() as conn:
             updates = []
@@ -306,30 +300,30 @@ class KanbanStore:
                 else:
                     continue
                 params.append(value)
-            
+
             if not updates:
                 return False
-            
+
             params.append(column_id)
             cursor = conn.execute(f"UPDATE columns SET {', '.join(updates)} WHERE id = ?", params)
             return cursor.rowcount > 0
-    
+
     def delete_column(self, column_id: str) -> bool:
         with self._get_connection() as conn:
             cursor = conn.execute("DELETE FROM columns WHERE id = ?", (column_id,))
             return cursor.rowcount > 0
-    
+
     def reorder_columns(self, board_id: str, column_order: list[str]) -> bool:
         """Reorder columns by providing list of column IDs in new order."""
         with self._get_connection() as conn:
             for i, col_id in enumerate(column_order):
                 conn.execute("UPDATE columns SET order_num = ? WHERE id = ? AND board_id = ?", (i, col_id, board_id))
             return True
-    
+
     # =============================================================================
     # Task Operations
     # =============================================================================
-    
+
     def create_task(
         self,
         board_id: str,
@@ -343,7 +337,7 @@ class KanbanStore:
     ) -> KanbanTask:
         task_id = str(uuid.uuid4())[:12]
         now = time.time()
-        
+
         task = KanbanTask(
             id=task_id,
             board_id=board_id,
@@ -358,7 +352,7 @@ class KanbanStore:
             created_at=now,
             updated_at=now,
         )
-        
+
         with self._get_connection() as conn:
             conn.execute("""
                 INSERT INTO tasks (id, board_id, column_id, title, description, status, priority, assignee, labels, due_date, created_at, updated_at, metadata)
@@ -368,21 +362,21 @@ class KanbanStore:
                 TaskStatus.BACKLOG.value, priority.value, assignee,
                 json.dumps(labels or []), due_date, now, now, "{}"
             ))
-        
+
         return task
-    
-    def get_task(self, task_id: str) -> Optional[KanbanTask]:
+
+    def get_task(self, task_id: str) -> KanbanTask | None:
         with self._get_connection() as conn:
             row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
             if not row:
                 return None
             return self._row_to_task(row)
-    
+
     def get_tasks(self, board_id: str = None, column_id: str = None, assignee: str = None) -> list[KanbanTask]:
         with self._get_connection() as conn:
             query = "SELECT * FROM tasks WHERE 1=1"
             params = []
-            
+
             if board_id:
                 query += " AND board_id = ?"
                 params.append(board_id)
@@ -392,11 +386,11 @@ class KanbanStore:
             if assignee:
                 query += " AND assignee = ?"
                 params.append(assignee)
-            
+
             query += " ORDER BY created_at DESC"
             rows = conn.execute(query, params).fetchall()
             return [self._row_to_task(r) for r in rows]
-    
+
     def _row_to_task(self, row: sqlite3.Row) -> KanbanTask:
         return KanbanTask(
             id=row["id"],
@@ -415,7 +409,7 @@ class KanbanStore:
             completed_at=row["completed_at"],
             metadata=json.loads(row["metadata"]) if row["metadata"] else {},
         )
-    
+
     def move_task(self, task_id: str, column_id: str) -> bool:
         """Move task to a different column."""
         with self._get_connection() as conn:
@@ -423,38 +417,38 @@ class KanbanStore:
             task = self.get_task(task_id)
             if not task:
                 return False
-            
+
             old_column = task.column_id
             new_status = self._get_column_status(column_id)
-            
+
             now = time.time()
             updates = ["column_id = ?", "status = ?", "updated_at = ?"]
             params = [column_id, new_status.value if new_status else TaskStatus.TODO.value, time.time()]
-            
+
             if new_status == TaskStatus.IN_PROGRESS and not task.started_at:
                 updates.append("started_at = ?")
                 params.append(time.time())
             elif new_status == TaskStatus.DONE and not task.completed_at:
                 updates.append("completed_at = ?")
                 params.append(time.time())
-            
+
             params.append(task_id)
-            
+
             cursor = conn.execute(f"UPDATE tasks SET {', '.join(updates)} WHERE id = ?", params)
             return cursor.rowcount > 0
-    
-    def _get_column_status(self, column_id: str) -> Optional[TaskStatus]:
+
+    def _get_column_status(self, column_id: str) -> TaskStatus | None:
         with self._get_connection() as conn:
             row = conn.execute("SELECT status FROM columns WHERE id = ?", (column_id,)).fetchone()
             if row:
                 return TaskStatus(row["status"])
         return None
-    
+
     def update_task(self, task_id: str, **kwargs) -> bool:
         with self._get_connection() as conn:
             updates = []
             params = []
-            
+
             for key, value in kwargs.items():
                 if key == "title":
                     updates.append("title = ?")
@@ -476,22 +470,22 @@ class KanbanStore:
                 else:
                     continue
                 params.append(value)
-            
+
             if not updates:
                 return False
-            
+
             updates.append("updated_at = ?")
             params.append(time.time())
             params.append(task_id)
-            
+
             cursor = conn.execute(f"UPDATE tasks SET {', '.join(updates)} WHERE id = ?", params)
             return cursor.rowcount > 0
-    
+
     def delete_task(self, task_id: str) -> bool:
         with self._get_connection() as conn:
             cursor = conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
             return cursor.rowcount > 0
-    
+
     def assign_task(self, task_id: str, assignee: str) -> bool:
         """Assign task to an agent/user."""
         with self._get_connection() as conn:
@@ -500,7 +494,7 @@ class KanbanStore:
                 (assignee, time.time(), task_id)
             )
             return cursor.rowcount > 0
-    
+
     def add_label(self, task_id: str, label: str) -> bool:
         task = self.get_task(task_id)
         if not task:
@@ -509,7 +503,7 @@ class KanbanStore:
             task.labels.append(label)
             return self.update_task(task_id, labels=task.labels)
         return True
-    
+
     def remove_label(self, task_id: str, label: str) -> bool:
         task = self.get_task(task_id)
         if not task:
@@ -518,21 +512,21 @@ class KanbanStore:
             task.labels.remove(label)
             return self.update_task(task_id, labels=task.labels)
         return True
-    
+
     # =============================================================================
     # Board View
     # =============================================================================
-    
+
     def get_board_view(self, board_id: str) -> dict:
         """Get complete board view with columns and tasks."""
         board = self.get_board(board_id)
         if not board:
             return {}
-        
+
         with self._get_connection() as conn:
             columns = conn.execute("SELECT * FROM columns WHERE board_id = ? ORDER BY order_num", (board_id,)).fetchall()
             tasks = conn.execute("SELECT * FROM tasks WHERE board_id = ?", (board_id,)).fetchall()
-        
+
         # Group tasks by column
         tasks_by_column = {}
         for task_row in tasks:
@@ -540,7 +534,7 @@ class KanbanStore:
             if task.column_id not in tasks_by_column:
                 tasks_by_column[task.column_id] = []
             tasks_by_column[task.column_id].append(task)
-        
+
         return {
             "board": {
                 "id": board.id,
@@ -578,20 +572,20 @@ class KanbanStore:
 
 class KanbanManager:
     """High-level Kanban manager with agent integration."""
-    
+
     def __init__(self, profile: str = "default"):
         self.profile = profile
         self.store = KanbanStore(profile)
-    
+
     def create_board(self, name: str, description: str = "") -> KanbanBoard:
         return self.store.create_board(name, description, self.profile)
-    
-    def get_board(self, board_id: str) -> Optional[KanbanBoard]:
+
+    def get_board(self, board_id: str) -> KanbanBoard | None:
         return self.store.get_board(board_id)
-    
+
     def list_boards(self) -> list[KanbanBoard]:
         return self.store.list_boards()
-    
+
     def create_task(
         self,
         board_id: str,
@@ -602,28 +596,28 @@ class KanbanManager:
         assignee: str = None,
     ) -> KanbanTask:
         return self.store.create_task(board_id, column_id, title, description, priority, assignee)
-    
+
     def move_task(self, task_id: str, column_id: str) -> bool:
         return self.store.move_task(task_id, column_id)
-    
+
     def assign_task(self, task_id: str, assignee: str) -> bool:
         return self.store.assign_task(task_id, assignee)
-    
+
     def get_board_view(self, board_id: str) -> dict:
         return self.store.get_board_view(board_id)
-    
-    def get_task(self, task_id: str) -> Optional[KanbanTask]:
+
+    def get_task(self, task_id: str) -> KanbanTask | None:
         return self.store.get_task(task_id)
-    
+
     def update_task(self, task_id: str, **kwargs) -> bool:
         return self.store.update_task(task_id, **kwargs)
-    
+
     def delete_task(self, task_id: str) -> bool:
         return self.store.delete_task(task_id)
-    
+
     def add_label(self, task_id: str, label: str) -> bool:
         return self.store.add_label(task_id, label)
-    
+
     def remove_label(self, task_id: str, label: str) -> bool:
         return self.store.remove_label(task_id, label)
 
@@ -634,10 +628,10 @@ class KanbanManager:
 
 class KanbanAgent:
     """Agent that can interact with Kanban boards."""
-    
+
     def __init__(self, manager: KanbanManager):
         self.manager = manager
-    
+
     def create_task_from_prompt(self, board_id: str, prompt: str) -> KanbanTask:
         """Create a task from a natural language prompt."""
         # Parse prompt for title, description, priority
@@ -645,36 +639,36 @@ class KanbanAgent:
         lines = prompt.strip().split("\n")
         title = lines[0] if lines else "Untitled Task"
         description = "\n".join(lines[1:]) if len(lines) > 1 else ""
-        
+
         # Default to first column (backlog)
         board = self.manager.store.get_board(board_id)
         if not board or not board.columns:
             raise ValueError("Board not found or has no columns")
-        
+
         return self.manager.create_task(
             board_id=board_id,
             column_id=board.columns[0].id,
             title=title,
             description=description,
         )
-    
+
     def move_task_to_status(self, task_id: str, status: TaskStatus) -> bool:
         """Move task to column matching status."""
         task = self.manager.store.get_task(task_id)
         if not task:
             return False
-        
+
         board = self.manager.store.get_board(task.board_id)
         if not board:
             return False
-        
+
         # Find column with matching status
         target_column = next((c for c in board.columns if c.status == status), None)
         if not target_column:
             return False
-        
+
         return self.manager.move_task(task_id, target_column.id)
-    
+
     def get_agent_tasks(self, agent_name: str) -> list[KanbanTask]:
         """Get all tasks assigned to an agent."""
         # Search across all boards
@@ -710,12 +704,12 @@ def kanban_add_task(board_id: str, column: str, title: str, description: str = "
     if not board:
         print(f"Board not found: {board_id}")
         return ""
-    
+
     # Find column by name or status
     target_column = next((c for c in board.columns if c.name.lower() == column.lower() or c.status.value == column.lower()), None)
     if not target_column:
         target_column = board.columns[0]  # Default to first column
-    
+
     priority = TaskPriority[priority.upper()]
     task = manager.create_task(board_id, target_column.id, title, description, priority, assignee)
     print(f"Created task: {task.id} ({task.title}) in {target_column.name}")
@@ -729,16 +723,16 @@ def kanban_move_task(task_id: str, column: str) -> bool:
     if not task:
         print(f"Task not found: {task_id}")
         return False
-    
+
     board = manager.store.get_board(task.board_id)
     if not board:
         return False
-    
+
     target_column = next((c for c in board.columns if c.name.lower() == column.lower() or c.status.value == column.lower()), None)
     if not target_column:
         print(f"Column not found: {column}")
         return False
-    
+
     if manager.move_task(task_id, target_column.id):
         print(f"Moved task {task_id} to {target_column.name}")
         return True

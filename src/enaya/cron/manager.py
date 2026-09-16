@@ -8,19 +8,16 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
 
 import croniter
-from enaya.run_agent import create_agent, AIAgent, AgentConfig
-from enaya.gateway.runner import GatewayRunner
-from enaya.cli.config import load_config
 
+from enaya.cli.config import load_config
+from enaya.gateway.runner import GatewayRunner
+from enaya.run_agent import create_agent
 
 # =============================================================================
 # Cron Data Classes
@@ -40,8 +37,8 @@ class CronJob:
     schedule: str  # cron expression, interval in seconds, or ISO timestamp
     schedule_type: CronScheduleType = CronScheduleType.CRON
     prompt: str = ""
-    model: Optional[str] = None
-    provider: Optional[str] = None
+    model: str | None = None
+    provider: str | None = None
     toolsets: list[str] = field(default_factory=list)
     skills: list[str] = field(default_factory=list)
     max_turns: int = 500
@@ -50,11 +47,11 @@ class CronJob:
     enabled: bool = True
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
-    last_run: Optional[float] = None
-    next_run: Optional[float] = None
+    last_run: float | None = None
+    next_run: float | None = None
     run_count: int = 0
-    last_result: Optional[str] = None
-    last_error: Optional[str] = None
+    last_result: str | None = None
+    last_error: str | None = None
     metadata: dict = field(default_factory=dict)
 
 
@@ -63,10 +60,10 @@ class CronJobResult:
     """Result of a cron job execution."""
     job_id: str
     success: bool
-    result: Optional[str] = None
-    error: Optional[str] = None
+    result: str | None = None
+    error: str | None = None
     started_at: float = field(default_factory=time.time)
-    completed_at: Optional[float] = None
+    completed_at: float | None = None
     duration: float = 0.0
 
 
@@ -76,7 +73,7 @@ class CronJobResult:
 
 class CronManager:
     """Manages cron jobs with scheduling and execution."""
-    
+
     def __init__(self, profile: str = "default", gateway: GatewayRunner = None):
         self.profile = profile
         self.gateway = gateway
@@ -85,29 +82,29 @@ class CronManager:
         self.jobs_file.parent.mkdir(parents=True, exist_ok=True)
         self.jobs: dict[str, CronJob] = {}
         self._running = False
-        self._scheduler_task: Optional[asyncio.Task] = None
+        self._scheduler_task: asyncio.Task | None = None
         self._running_jobs: dict[str, asyncio.Task] = {}
         self._load_jobs()
-    
+
     def _load_jobs(self) -> None:
         """Load jobs from JSON file."""
         if self.jobs_file.exists():
             try:
                 with open(self.jobs_file) as f:
                     data = json.load(f)
-                
+
                 for job_data in data.get("jobs", []):
                     job = CronJob(**job_data)
                     # Convert fallback_providers from list of lists to tuples
                     if job.fallback_providers and isinstance(job.fallback_providers[0], list):
                         job.fallback_providers = [tuple(p) for p in job.fallback_providers]
                     self.jobs[job.id] = job
-                    
+
                     # Calculate next run
                     self._calculate_next_run(job)
             except Exception as e:
                 print(f"Failed to load cron jobs: {e}")
-    
+
     def _save_jobs(self) -> None:
         """Save jobs to JSON file."""
         try:
@@ -125,20 +122,20 @@ class CronManager:
                 json.dump(data, f, indent=2)
         except Exception as e:
             print(f"Failed to save cron jobs: {e}")
-    
+
     def _calculate_next_run(self, job: CronJob) -> None:
         """Calculate next run time for a job."""
         if not job.enabled:
             job.next_run = None
             return
-        
+
         if job.schedule_type == CronScheduleType.CRON:
             try:
                 cron = croniter.croniter(job.schedule, time.time())
                 job.next_run = cron.get_next(float)
             except Exception:
                 job.next_run = None
-        
+
         elif job.schedule_type == CronScheduleType.INTERVAL:
             try:
                 interval = float(job.schedule)
@@ -146,13 +143,13 @@ class CronManager:
                 job.next_run = base + interval
             except Exception:
                 job.next_run = None
-        
+
         elif job.schedule_type == CronScheduleType.ONESHOT:
             try:
                 job.next_run = float(job.schedule)
             except Exception:
                 job.next_run = None
-    
+
     def add_job(
         self,
         name: str,
@@ -171,7 +168,7 @@ class CronManager:
         """Add a new cron job."""
         import uuid
         job_id = str(uuid.uuid4())[:12]
-        
+
         job = CronJob(
             id=job_id,
             name=name,
@@ -187,12 +184,12 @@ class CronManager:
             deliver=deliver or {},
             metadata=metadata or {},
         )
-        
+
         self._calculate_next_run(job)
         self.jobs[job_id] = job
         self._save_jobs()
         return job_id
-    
+
     def remove_job(self, job_id: str) -> bool:
         """Remove a cron job."""
         if job_id in self.jobs:
@@ -200,12 +197,12 @@ class CronManager:
             if job_id in self._running_jobs:
                 self._running_jobs[job_id].cancel()
                 del self._running_jobs[job_id]
-            
+
             del self.jobs[job_id]
             self._save_jobs()
             return True
         return False
-    
+
     def enable_job(self, job_id: str, enabled: bool = True) -> bool:
         """Enable or disable a cron job."""
         if job_id in self.jobs:
@@ -214,55 +211,55 @@ class CronManager:
             self._save_jobs()
             return True
         return False
-    
-    def get_job(self, job_id: str) -> Optional[CronJob]:
+
+    def get_job(self, job_id: str) -> CronJob | None:
         return self.jobs.get(job_id)
-    
+
     def list_jobs(self) -> list[CronJob]:
         return list(self.jobs.values())
-    
+
     async def start(self) -> None:
         """Start the cron scheduler."""
         if self._running:
             return
-        
+
         self._running = True
         self._scheduler_task = asyncio.create_task(self._scheduler_loop())
         print("Cron scheduler started")
-    
+
     async def stop(self) -> None:
         """Stop the cron scheduler."""
         self._running = False
-        
+
         if self._scheduler_task:
             self._scheduler_task.cancel()
             try:
                 await self._scheduler_task
             except asyncio.CancelledError:
                 pass
-        
+
         # Cancel running jobs
         for task in self._running_jobs.values():
             task.cancel()
         self._running_jobs.clear()
-        
+
         print("Cron scheduler stopped")
-    
+
     async def _scheduler_loop(self) -> None:
         """Main scheduler loop."""
         while self._running:
             try:
                 now = time.time()
-                
+
                 for job in list(self.jobs.values()):
                     if not job.enabled or job.next_run is None:
                         continue
-                    
+
                     if now >= job.next_run:
                         # Execute job
                         task = asyncio.create_task(self._execute_job(job))
                         self._running_jobs[job.id] = task
-                
+
                 # Clean up completed tasks
                 completed = [
                     job_id for job_id, task in self._running_jobs.items()
@@ -270,16 +267,16 @@ class CronManager:
                 ]
                 for job_id in completed:
                     del self._running_jobs[job_id]
-                
+
             except Exception as e:
                 print(f"Scheduler error: {e}")
-            
+
             await asyncio.sleep(1)  # Check every second
-    
+
     async def _execute_job(self, job: CronJob) -> CronJobResult:
         """Execute a cron job."""
         start_time = time.time()
-        
+
         try:
             # Create agent for this job
             agent = create_agent(
@@ -291,34 +288,34 @@ class CronManager:
                 chat_type="cron",
                 chat_id=job.id,
             )
-            
+
             # Set fallback providers
             if job.fallback_providers:
                 agent.config.fallback_providers = job.fallback_providers
-            
+
             # Set toolsets
             if job.toolsets:
                 agent.config.toolsets = job.toolsets
-            
+
             # Run the job
             result = agent.run_conversation(job.prompt)
-            
+
             # Update job
             job.last_run = time.time()
             job.run_count += 1
             job.last_result = result
             job.last_error = None
-            
+
             # Calculate next run
             self._calculate_next_run(job)
             self._save_jobs()
-            
+
             # Deliver result if configured
             if job.deliver and self.gateway:
                 await self._deliver_result(job, result)
-            
+
             duration = time.time() - start_time
-            
+
             return CronJobResult(
                 job_id=job.id,
                 success=True,
@@ -327,15 +324,15 @@ class CronManager:
                 completed_at=time.time(),
                 duration=duration,
             )
-            
+
         except Exception as e:
             job.last_run = time.time()
             job.last_error = str(e)
             self._calculate_next_run(job)
             self._save_jobs()
-            
+
             duration = time.time() - start_time
-            
+
             return CronJobResult(
                 job_id=job.id,
                 success=False,
@@ -347,20 +344,20 @@ class CronManager:
         finally:
             if job.id in self._running_jobs:
                 del self._running_jobs[job.id]
-    
+
     async def _deliver_result(self, job: CronJob, result: str) -> None:
         """Deliver job result to configured destination."""
         if not self.gateway:
             return
-        
+
         platform = job.deliver.get("platform")
         chat_type = job.deliver.get("chat_type", "private")
         chat_id = job.deliver.get("chat_id")
-        
+
         if platform and chat_id:
             message = f"📅 **Cron Job: {job.name}**\n\n{result}"
             await self.gateway.deliver_to_home(platform, message)
-    
+
     def get_status(self) -> dict:
         """Get cron system status."""
         return {
@@ -388,7 +385,7 @@ class CronManager:
 # Cron CLI Commands
 # =============================================================================
 
-_cron_manager: Optional[CronManager] = None
+_cron_manager: CronManager | None = None
 
 
 def get_cron_manager(profile: str = "default", gateway: GatewayRunner = None) -> CronManager:
@@ -411,11 +408,11 @@ def cron_add(
 ) -> str:
     """Add a cron job."""
     manager = get_cron_manager()
-    
+
     stype = CronScheduleType(schedule_type)
     toolsets = toolsets.split(",") if toolsets else []
     skills_list = skills.split(",") if skills else []
-    
+
     job_id = manager.add_job(
         name=name,
         schedule=schedule,
@@ -427,7 +424,7 @@ def cron_add(
         skills=skills_list,
         max_turns=max_turns,
     )
-    
+
     print(f"Added cron job: {job_id} ({name})")
     return job_id
 

@@ -10,7 +10,6 @@ import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
 
 
 @dataclass
@@ -36,7 +35,7 @@ class ProjectIndexer:
         self.index_dir.mkdir(parents=True, exist_ok=True)
         self.mcp_binary = self._find_mcp_binary()
 
-    def _find_mcp_binary(self) -> Optional[str]:
+    def _find_mcp_binary(self) -> str | None:
         """Find codebase-memory-mcp binary."""
         candidates = [
             "codebase-memory-mcp",
@@ -94,7 +93,6 @@ class ProjectIndexer:
     def _index_basic(self) -> ProjectIndex:
         """Basic indexing without MCP."""
         from datetime import datetime
-        import fnmatch
 
         languages = {}
         nodes = 0

@@ -6,7 +6,6 @@ Feasibility and completeness checks for plans.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass

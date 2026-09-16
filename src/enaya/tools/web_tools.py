@@ -7,11 +7,8 @@ Mirrors Hermes Agent's tools/web_tools.py exactly.
 from __future__ import annotations
 
 import json
-import os
-from typing import Any
 
 from enaya.tools.registry import registry
-
 
 # =============================================================================
 # web_search
@@ -41,9 +38,10 @@ def check_web_search_requirements() -> bool:
 def web_search_tool(query: str, limit: int = 10) -> str:
     """Search the web using DuckDuckGo HTML scraping."""
     try:
+        from urllib.parse import quote_plus
+
         import requests
         from bs4 import BeautifulSoup
-        from urllib.parse import quote_plus, urljoin
 
         # Use DuckDuckGo HTML
         url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
@@ -121,9 +119,10 @@ def check_web_extract_requirements() -> bool:
 def web_extract_tool(urls: list[str], char_limit: int = 15000) -> str:
     """Extract content from URLs using requests + BeautifulSoup."""
     try:
+        from urllib.parse import urlparse
+
         import requests
         from bs4 import BeautifulSoup
-        from urllib.parse import urlparse
 
         results = []
 

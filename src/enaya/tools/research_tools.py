@@ -7,11 +7,8 @@ Enaya-specific tools for deep research capabilities.
 from __future__ import annotations
 
 import json
-import os
-from typing import Any
 
 from enaya.tools.registry import registry
-
 
 # =============================================================================
 # arxiv_search
@@ -122,10 +119,11 @@ def check_paper_analyze_requirements() -> bool:
 def paper_analyze_tool(source: str, focus: str = None) -> str:
     """Analyze an academic paper."""
     try:
+        from io import BytesIO
+
         import arxiv
         import pdfplumber
         import requests
-        from io import BytesIO
 
         # Fetch paper
         if source.startswith("http"):
@@ -213,9 +211,7 @@ def check_source_validator_requirements() -> bool:
 def source_validator_tool(url: str, claim: str = None) -> str:
     """Validate source credibility."""
     try:
-        import requests
         from urllib.parse import urlparse
-        import re
 
         parsed = urlparse(url)
         domain = parsed.netloc.lower()

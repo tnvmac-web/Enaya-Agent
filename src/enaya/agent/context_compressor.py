@@ -6,16 +6,14 @@ Mirrors Hermes Agent's agent/context_compressor.py exactly.
 
 from __future__ import annotations
 
-import json
-import tiktoken
 from dataclasses import dataclass
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
+
+import tiktoken
 
 if TYPE_CHECKING:
     from enaya.run_agent import AIAgent
 
-from enaya.agent.prompt_builder import build_system_prompt, build_volatile_prompt
-from enaya.model_tools import collect_tool_schemas
 
 
 @dataclass

@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from enaya.tools.registry import registry
 
 if TYPE_CHECKING:
-    from enaya.run_agent import create_agent, AIAgent, AgentConfig
+    from enaya.run_agent import AgentConfig, AIAgent
 
 
 # =============================================================================

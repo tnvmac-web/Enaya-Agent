@@ -7,15 +7,12 @@ Manage background processes.
 from __future__ import annotations
 
 import json
-import subprocess
 import os
-import sys
 import signal
+import subprocess
 import time
-from typing import Any
 
 from enaya.tools.registry import registry
-
 
 # =============================================================================
 # Process Tool
@@ -56,12 +53,12 @@ _processes: dict[int, dict] = {}
 def process_tool(action: str, command: str = None, pid: int = None, name: str = None, cwd: str = None) -> str:
     """Process management tool."""
     global _processes
-    
+
     try:
         if action == "start":
             if not command:
                 return json.dumps({"error": "command required for start action"})
-            
+
             proc = subprocess.Popen(
                 command,
                 shell=True,
@@ -71,7 +68,7 @@ def process_tool(action: str, command: str = None, pid: int = None, name: str = 
                 text=True,
                 start_new_session=True,
             )
-            
+
             proc_info = {
                 "pid": proc.pid,
                 "command": command,
@@ -81,32 +78,32 @@ def process_tool(action: str, command: str = None, pid: int = None, name: str = 
                 "process": proc,
             }
             _processes[proc.pid] = proc_info
-            
+
             return json.dumps({
                 "success": True,
                 "pid": proc.pid,
                 "message": f"Started process {proc.pid}: {command}"
             })
-        
+
         elif action == "stop":
             if pid is None:
                 return json.dumps({"error": "pid required for stop action"})
-            
+
             if pid not in _processes:
                 return json.dumps({"error": f"Process {pid} not found"})
-            
+
             proc_info = _processes[pid]
             proc = proc_info["process"]
-            
+
             try:
                 os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
                 proc.wait(timeout=5)
             except:
                 os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-            
+
             del _processes[pid]
             return json.dumps({"success": True, "message": f"Stopped process {pid}"})
-        
+
         elif action == "list":
             result = []
             for pid, info in _processes.items():
@@ -117,31 +114,31 @@ def process_tool(action: str, command: str = None, pid: int = None, name: str = 
                     "running_time": time.time() - info["started_at"],
                 })
             return json.dumps({"processes": result})
-        
+
         elif action == "logs":
             if pid is None:
                 return json.dumps({"error": "pid required for logs action"})
-            
+
             if pid not in _processes:
                 return json.dumps({"error": f"Process {pid} not found"})
-            
+
             # For simplicity, return empty logs (real implementation would capture stdout/stderr)
             return json.dumps({
                 "pid": pid,
                 "stdout": "Logs not captured in this implementation",
                 "stderr": "",
             })
-        
+
         elif action == "status":
             if pid is None:
                 return json.dumps({"error": "pid required for status action"})
-            
+
             if pid not in _processes:
                 return json.dumps({"error": f"Process {pid} not found"})
-            
+
             proc_info = _processes[pid]
             proc = proc_info["process"]
-            
+
             return json.dumps({
                 "pid": pid,
                 "name": proc_info["name"],
@@ -149,10 +146,10 @@ def process_tool(action: str, command: str = None, pid: int = None, name: str = 
                 "returncode": proc.poll(),
                 "running_time": time.time() - proc_info["started_at"],
             })
-        
+
         else:
             return json.dumps({"error": f"Unknown action: {action}"})
-    
+
     except Exception as e:
         return json.dumps({"error": str(e)})
 

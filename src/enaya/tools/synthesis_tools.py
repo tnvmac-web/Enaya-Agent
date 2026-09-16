@@ -7,10 +7,8 @@ Enaya-specific tools for result aggregation.
 from __future__ import annotations
 
 import json
-from typing import Any
 
 from enaya.tools.registry import registry
-
 
 # =============================================================================
 # synthesize_results

@@ -7,9 +7,8 @@ Mirrors Hermes Agent's agent/conversation_loop.py exactly.
 from __future__ import annotations
 
 import json
-import time
 import uuid
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from enaya.run_agent import AIAgent
@@ -19,8 +18,8 @@ def run_conversation(
     agent: AIAgent,
     user_input: str,
     *,
-    prefill: Optional[str] = None,
-    ephemeral_system_prompt: Optional[str] = None,
+    prefill: str | None = None,
+    ephemeral_system_prompt: str | None = None,
 ) -> str:
     """
     Main conversation loop.
@@ -101,8 +100,8 @@ def run_conversation(
 def _build_api_messages(
     agent: AIAgent,
     system_prompt: str,
-    prefill: Optional[str] = None,
-    ephemeral_system_prompt: Optional[str] = None,
+    prefill: str | None = None,
+    ephemeral_system_prompt: str | None = None,
 ) -> list[dict]:
     """Build messages array for API call based on api_mode."""
     messages = [{"role": "system", "content": system_prompt}]

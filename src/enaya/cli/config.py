@@ -7,10 +7,10 @@ Mirrors Hermes Agent's hermes_cli/config.py exactly.
 from __future__ import annotations
 
 import os
-import yaml
 from pathlib import Path
 from typing import Any
 
+import yaml
 
 # =============================================================================
 # Config Defaults
@@ -67,7 +67,7 @@ def load_config(profile: str = "default") -> dict[str, Any]:
     config_file = enaya_home / "config.yaml"
     if config_file.exists():
         try:
-            with open(config_file, "r") as f:
+            with open(config_file) as f:
                 file_config = yaml.safe_load(f) or {}
                 config.update(file_config)
         except Exception:

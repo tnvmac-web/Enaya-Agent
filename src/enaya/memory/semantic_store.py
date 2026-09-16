@@ -6,7 +6,6 @@ ChromaDB integration for vector-based semantic memory.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional
 
 
 @dataclass

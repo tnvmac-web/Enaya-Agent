@@ -10,13 +10,12 @@ import base64
 import io
 import os
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, AsyncGenerator, Optional
 
 import httpx
 from PIL import Image
-
 
 # =============================================================================
 # Image Generation Models
@@ -51,7 +50,7 @@ class ImageGenerationConfig:
     num_images: int = 1
     steps: int = 28
     guidance_scale: float = 3.5
-    seed: Optional[int] = None
+    seed: int | None = None
     prompt_strength: float = 0.8
     negative_prompt: str = ""
     format: str = "png"  # png, jpeg, webp
@@ -64,17 +63,17 @@ class ImageGenerationConfig:
 
 class ImageGenProvider(ABC):
     """Abstract image generation provider."""
-    
+
     @abstractmethod
     async def generate(self, prompt: str, config: ImageGenerationConfig) -> list[bytes]:
         """Generate images from prompt."""
         pass
-    
+
     @abstractmethod
     async def generate_stream(self, prompt: str, config: ImageGenerationConfig) -> AsyncGenerator[bytes, None]:
         """Stream image generation."""
         pass
-    
+
     @abstractmethod
     def get_supported_models(self) -> list[ImageModel]:
         """Get list of supported models."""
@@ -87,7 +86,7 @@ class ImageGenProvider(ABC):
 
 class FalAIProvider(ImageGenProvider):
     """FAL.ai image generation provider."""
-    
+
     MODEL_MAP = {
         ImageModel.FLUX_PRO: "fal-ai/flux-pro",
         ImageModel.FLUX_DEV: "fal-ai/flux-dev",
@@ -104,7 +103,7 @@ class FalAIProvider(ImageGenProvider):
         ImageModel.STABLE_DIFFUSION_XL: "fal-ai/stable-diffusion-xl",
         ImageModel.MIDJOURNEY_V6: "fal-ai/midjourney-v6",
     }
-    
+
     def __init__(self, api_key: str = None):
         self.api_key = api_key or os.environ.get("FAL_KEY") or os.environ.get("FAL_API_KEY")
         if not self.api_key:
@@ -113,12 +112,12 @@ class FalAIProvider(ImageGenProvider):
             headers={"Authorization": f"Key {self.api_key}"},
             timeout=300.0,
         )
-    
+
     async def generate(self, prompt: str, config: ImageGenerationConfig) -> list[bytes]:
         model_endpoint = self.MODEL_MAP.get(config.model)
         if not model_endpoint:
             raise ValueError(f"Model {config.model} not supported by FAL.ai")
-        
+
         payload = {
             "prompt": prompt,
             "image_size": self._get_size_string(config.width, config.height),
@@ -129,11 +128,11 @@ class FalAIProvider(ImageGenProvider):
             "negative_prompt": config.negative_prompt,
             "format": config.format,
         }
-        
+
         # Add model-specific parameters
         if "flux" in model_endpoint.lower():
             payload["enable_safety_checker"] = False
-        
+
         async with httpx.AsyncClient(
             headers={"Authorization": f"Key {self.api_key}"},
             timeout=300.0,
@@ -146,33 +145,33 @@ class FalAIProvider(ImageGenProvider):
             )
             resp.raise_for_status()
             result = resp.json()
-            
+
             # Handle queue response
             if "request_id" in result:
                 request_id = result["request_id"]
                 status_url = f"https://queue.fal.run/{model_endpoint}/requests/{request_id}/status"
-                
+
                 # Poll for completion
                 async with httpx.AsyncClient(timeout=300.0) as client:
                     while True:
                         status_resp = await client.get(status_url)
                         status_resp.raise_for_status()
                         status = status_resp.json()
-                        
+
                         if status["status"] == "COMPLETED":
                             break
                         elif status["status"] in ("FAILED", "CANCELLED"):
                             raise RuntimeError(f"Generation failed: {status.get('error', 'Unknown error')}")
-                        
+
                         await asyncio.sleep(2)
-                
+
                 # Get result
                 result_url = f"https://queue.fal.run/{model_endpoint}/requests/{request_id}"
                 async with httpx.AsyncClient(timeout=60.0) as client:
                     result_resp = await client.get(result_url)
                     result_resp.raise_for_status()
                     result = result_resp.json()
-            
+
             # Download images
             images = []
             for img_data in result.get("images", []):
@@ -181,18 +180,18 @@ class FalAIProvider(ImageGenProvider):
                     img_resp = await client.get(img_url)
                     img_resp.raise_for_status()
                     images.append(img_resp.content)
-            
+
             return images
-    
+
     async def generate_stream(self, prompt: str, config: ImageGenerationConfig) -> AsyncGenerator[bytes, None]:
         # For now, just yield after full generation
         images = await self.generate(prompt, config)
         for img in images:
             yield img
-    
+
     def get_supported_models(self) -> list[ImageModel]:
         return list(self.MODEL_MAP.keys())
-    
+
     def _get_size_string(self, width: int, height: int) -> str:
         """Convert dimensions to FAL.ai size string."""
         if width == height:
@@ -220,22 +219,21 @@ class FalAIProvider(ImageGenProvider):
 
 class OpenAIProvider(ImageGenProvider):
     """OpenAI DALL-E / GPT-Image provider."""
-    
+
     def __init__(self, api_key: str = None):
         from openai import OpenAI
         self.client = OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
-    
+
     async def generate(self, prompt: str, config: ImageGenerationConfig) -> list[bytes]:
-        from openai import OpenAI
-        
+
         # Map models
         model_map = {
             ImageModel.DALL_E_3: "dall-e-3",
             ImageModel.GPT_IMAGE: "gpt-image-1",
         }
-        
+
         model = model_map.get(config.model, "dall-e-3")
-        
+
         response = self.client.images.generate(
             model=model,
             prompt=prompt,
@@ -245,18 +243,18 @@ class OpenAIProvider(ImageGenProvider):
             style="vivid",
             response_format="b64_json",
         )
-        
+
         images = []
         for img_data in response.data:
             images.append(base64.b64decode(img_data.b64_json))
-        
+
         return images
-    
+
     async def generate_stream(self, prompt: str, config: ImageGenerationConfig) -> AsyncGenerator[bytes, None]:
         images = await self.generate(prompt, config)
         for img in images:
             yield img
-    
+
     def get_supported_models(self) -> list[ImageModel]:
         return [ImageModel.DALL_E_3, ImageModel.GPT_IMAGE]
 
@@ -267,22 +265,22 @@ class OpenAIProvider(ImageGenProvider):
 
 class ImageGenManager:
     """Manages image generation across providers."""
-    
+
     def __init__(self):
         self.providers: dict[str, ImageGenProvider] = {}
         self.default_provider = "fal"
-    
+
     def add_provider(self, name: str, provider: ImageGenProvider) -> None:
         self.providers[name] = provider
-    
+
     def set_default(self, name: str) -> None:
         if name in self.providers:
             self.default_provider = name
-    
-    def get_provider(self, name: str = None) -> Optional[ImageGenProvider]:
+
+    def get_provider(self, name: str = None) -> ImageGenProvider | None:
         name = name or self.default_provider
         return self.providers.get(name)
-    
+
     def auto_configure(self) -> None:
         """Auto-configure based on available API keys."""
         if os.environ.get("FAL_KEY") or os.environ.get("FAL_API_KEY"):
@@ -291,7 +289,7 @@ class ImageGenManager:
                 self.default_provider = "fal"
             except:
                 pass
-        
+
         if os.environ.get("OPENAI_API_KEY"):
             try:
                 self.providers["openai"] = OpenAIProvider()
@@ -299,14 +297,14 @@ class ImageGenManager:
                     self.default_provider = "openai"
             except:
                 pass
-    
+
     def list_models(self) -> dict[str, list[str]]:
         """List available models per provider."""
         result = {}
         for name, provider in self.providers.items():
             result[name] = [m.value for m in provider.get_supported_models()]
         return result
-    
+
     async def generate(
         self,
         prompt: str,
@@ -318,10 +316,10 @@ class ImageGenManager:
         prov = self.get_provider(provider)
         if not prov:
             raise RuntimeError(f"No provider available. Available: {list(self.providers.keys())}")
-        
+
         config = ImageGenerationConfig(model=model or ImageModel.FLUX_DEV, **kwargs)
         return await prov.generate(prompt, config)
-    
+
     async def generate_and_save(
         self,
         prompt: str,
@@ -332,10 +330,10 @@ class ImageGenManager:
     ) -> list[str]:
         """Generate and save images to disk."""
         images = await self.generate(prompt, provider, model, **kwargs)
-        
+
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         saved_paths = []
-        
+
         for i, img_bytes in enumerate(images):
             img = Image.open(io.BytesIO(img_bytes))
             ext = "png"
@@ -343,7 +341,7 @@ class ImageGenManager:
             path = Path(output_dir) / filename
             img.save(path)
             saved_paths.append(str(path))
-        
+
         return saved_paths
 
 
@@ -385,18 +383,17 @@ IMAGE_GEN_TOOL_SCHEMA = {
 async def image_gen_tool(prompt: str, **kwargs) -> str:
     """Image generation tool handler."""
     import json
-    import time
-    
+
     manager = ImageGenManager()
     manager.auto_configure()
-    
+
     if not manager.providers:
         return json.dumps({"error": "No image generation provider configured. Set FAL_KEY or OPENAI_API_KEY."})
-    
+
     try:
         model_str = kwargs.get("model")
         model = ImageModel(model_str) if model_str else None
-        
+
         if kwargs.get("save"):
             paths = await manager.generate_and_save(
                 prompt=prompt,
@@ -429,7 +426,7 @@ async def image_gen_tool(prompt: str, **kwargs) -> str:
                 seed=kwargs.get("seed"),
                 negative_prompt=kwargs.get("negative_prompt", ""),
             )
-            
+
             # Return as base64
             b64_images = [base64.b64encode(img).decode() for img in images]
             return json.dumps({
@@ -438,6 +435,6 @@ async def image_gen_tool(prompt: str, **kwargs) -> str:
                 "count": len(b64_images),
                 "format": "base64_png",
             })
-    
+
     except Exception as e:
         return json.dumps({"error": str(e)})

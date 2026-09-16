@@ -4,39 +4,39 @@ Enaya Agent - Tools Package
 Core tools for the agent.
 """
 
-from .registry import registry, ToolDef
-
-# Import and register all tools
-from .file_tools import (
-    read_file_tool,
-    write_file_tool,
-    patch_tool,
-    search_files_tool,
-)
-from .web_tools import (
-    web_search_tool,
-    web_extract_tool,
-)
-from .research_tools import (
-    arxiv_search_tool,
-    paper_analyze_tool,
-    source_validator_tool,
-)
-from .planning_tools import (
-    task_decompose_tool,
-    plan_create_tool,
-    plan_review_tool,
-)
 from .delegation_tools import (
     delegate_task_tool,
     subagent_status_tool,
     subagent_steer_tool,
     subagent_stop_tool,
 )
+
+# Import and register all tools
+from .file_tools import (
+    patch_tool,
+    read_file_tool,
+    search_files_tool,
+    write_file_tool,
+)
+from .planning_tools import (
+    plan_create_tool,
+    plan_review_tool,
+    task_decompose_tool,
+)
+from .registry import ToolDef, registry
+from .research_tools import (
+    arxiv_search_tool,
+    paper_analyze_tool,
+    source_validator_tool,
+)
 from .synthesis_tools import (
-    synthesize_results_tool,
     compare_sources_tool,
     extract_claims_tool,
+    synthesize_results_tool,
+)
+from .web_tools import (
+    web_extract_tool,
+    web_search_tool,
 )
 
 # New tools
@@ -59,13 +59,13 @@ except ImportError:
     pass
 
 try:
-    from .voice_tool import voice_tts, voice_stt
+    from .voice_tool import voice_stt, voice_tts
     print("Registered: voice_tts, voice_stt")
 except ImportError:
     pass
 
 try:
-    from .process_tool import process_start, process_stop, process_list
+    from .process_tool import process_list, process_start, process_stop
     print("Registered: process_start, process_stop, process_list")
 except ImportError:
     pass

@@ -10,11 +10,13 @@ import asyncio
 import json
 import sys
 import uuid
-from typing import Any, AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
+from typing import Any
 
-from enaya.run_agent import create_agent, AIAgent, AgentConfig
+from pydantic import BaseModel
+
 from enaya.cli.config import load_config
-
+from enaya.run_agent import AIAgent, create_agent
 
 # =============================================================================
 # ACP Protocol Types
@@ -33,7 +35,7 @@ class ACPResponse(BaseModel):
     jsonrpc: str = "2.0"
     id: str | int
     result: Any = None
-    error: Optional[dict] = None
+    error: dict | None = None
 
 
 class ACPNotification(BaseModel):
@@ -49,25 +51,25 @@ class ACPNotification(BaseModel):
 
 class ACPSession:
     """ACP session with agent."""
-    
+
     def __init__(self, session_id: str, agent: AIAgent):
         self.session_id = session_id
         self.agent = agent
         self.history: list[dict] = []
-    
+
     async def prompt(self, prompt: str, stream: bool = False) -> str | AsyncGenerator[str, None]:
         """Send prompt to agent."""
         if stream:
             return self._stream_prompt(prompt)
         else:
             return self.agent.run_conversation(prompt)
-    
+
     async def _stream_prompt(self, prompt: str) -> AsyncGenerator[str, None]:
         """Stream prompt response."""
         # Current agent doesn't support true streaming
         result = self.agent.run_conversation(prompt)
         yield result
-    
+
     def cancel(self):
         """Cancel current operation."""
         self.agent.interrupt()
@@ -79,11 +81,11 @@ class ACPSession:
 
 class ACPServer:
     """ACP JSON-RPC server over stdio."""
-    
+
     def __init__(self):
         self.sessions: dict[str, ACPSession] = {}
-        self.default_agent: Optional[AIAgent] = None
-    
+        self.default_agent: AIAgent | None = None
+
     def initialize(self):
         """Initialize default agent."""
         config = load_config("default")
@@ -91,7 +93,7 @@ class ACPServer:
             model=config.get("model", "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free"),
             provider=config.get("provider", "openrouter"),
         )
-    
+
     async def handle_request(self, request: ACPRequest) -> ACPResponse:
         """Handle incoming JSON-RPC request."""
         try:
@@ -119,7 +121,7 @@ class ACPServer:
                 id=request.id,
                 error={"code": -32603, "message": f"Internal error: {str(e)}"}
             )
-    
+
     async def _handle_initialize(self, request: ACPRequest) -> ACPResponse:
         """Handle initialize request."""
         return ACPResponse(
@@ -138,39 +140,40 @@ class ACPServer:
                 },
             }
         )
-    
+
     async def _handle_session_create(self, request: ACPRequest) -> ACPResponse:
         """Create new session."""
         session_id = request.params.get("sessionId", str(uuid.uuid4()))
         model = request.params.get("model")
-        
+
         if model and ":" in model:
             provider, model_name = model.split(":", 1)
         else:
             provider = None
             model_name = model
-        
+
         config = load_config("default")
+        default_model = config.get("model", "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free")
         agent = create_agent(
-            model=model_name or config.get("model", "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free"),
+            model=model_name or default_model,
             provider=provider or config.get("provider", "openrouter"),
         )
-        
+
         session = ACPSession(session_id, agent)
         self.sessions[session_id] = session
-        
+
         return ACPResponse(
             id=request.id,
             result={"sessionId": session_id}
         )
-    
+
     async def _handle_session_delete(self, request: ACPRequest) -> ACPResponse:
         """Delete session."""
         session_id = request.params.get("sessionId")
         if session_id in self.sessions:
             del self.sessions[session_id]
         return ACPResponse(id=request.id, result={"success": True})
-    
+
     async def _handle_session_list(self, request: ACPRequest) -> ACPResponse:
         """List sessions."""
         return ACPResponse(
@@ -182,21 +185,21 @@ class ACPServer:
                 ]
             }
         )
-    
+
     async def _handle_prompt_submit(self, request: ACPRequest) -> ACPResponse:
         """Submit prompt to agent."""
         session_id = request.params.get("sessionId")
         prompt = request.params.get("prompt", "")
         stream = request.params.get("stream", False)
-        
+
         if session_id not in self.sessions:
             return ACPResponse(
                 id=request.id,
                 error={"code": -32602, "message": f"Session not found: {session_id}"}
             )
-        
+
         session = self.sessions[session_id]
-        
+
         if stream:
             # For streaming, we send notifications
             return ACPResponse(
@@ -212,14 +215,14 @@ class ACPServer:
                     "sessionId": session_id,
                 }
             )
-    
+
     async def _handle_prompt_cancel(self, request: ACPRequest) -> ACPResponse:
         """Cancel prompt."""
         session_id = request.params.get("sessionId")
         if session_id in self.sessions:
             self.sessions[session_id].cancel()
         return ACPResponse(id=request.id, result={"success": True})
-    
+
     async def _handle_agent_status(self, request: ACPRequest) -> ACPResponse:
         """Get agent status."""
         return ACPResponse(
@@ -230,22 +233,22 @@ class ACPServer:
                 "provider": self.default_agent.provider if self.default_agent else "unknown",
             }
         )
-    
+
     async def run_stdio(self):
         """Run server over stdio."""
         self.initialize()
-        
+
         reader = asyncio.StreamReader()
         protocol = asyncio.StreamReaderProtocol(reader)
         await asyncio.get_event_loop().connect_read_pipe(lambda: protocol, sys.stdin)
-        
+
         writer = asyncio.StreamWriter(sys.stdout, None, None, None)
-        
+
         while True:
             line = await reader.readline()
             if not line:
                 break
-            
+
             try:
                 request_data = json.loads(line.decode().strip())
                 request = ACPRequest(**request_data)
@@ -267,7 +270,6 @@ class ACPServer:
 # Pydantic Models
 # =============================================================================
 
-from pydantic import BaseModel
 
 
 # =============================================================================

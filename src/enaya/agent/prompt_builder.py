@@ -6,10 +6,9 @@ Mirrors Hermes Agent's agent/prompt_builder.py exactly.
 
 from __future__ import annotations
 
-import hashlib
 import os
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from enaya.run_agent import AIAgent
@@ -206,7 +205,7 @@ def build_context_files_prompt(agent: AIAgent, *, skip_soul: bool = False) -> st
     return ""
 
 
-def find_context_file(start: Path, names: list[str]) -> Optional[Path]:
+def find_context_file(start: Path, names: list[str]) -> Path | None:
     """Walk up directory tree to find context file (for .hermes.md/HERMES.md)."""
     current = start
     while current != current.parent:
@@ -237,7 +236,7 @@ def read_context_file(path: Path) -> str:
 # SOUL.md Loading
 # =============================================================================
 
-def load_soul_md(profile: str) -> Optional[str]:
+def load_soul_md(profile: str) -> str | None:
     """Load SOUL.md for the given profile."""
     # Check profile-specific location
     hermes_home = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes"))
