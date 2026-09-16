@@ -70,7 +70,7 @@ test-e2e:
 # Code Quality
 # ============================================================
 lint:
-	ruff check src/enaya tests
+	ruff check src/enaya tests --select=E,F,W --ignore=E501
 
 format:
 	ruff format src/enaya tests

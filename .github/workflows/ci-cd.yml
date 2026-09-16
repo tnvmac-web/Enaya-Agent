@@ -38,7 +38,7 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Run Ruff (lint)
-        run: ruff check src/enaya tests
+        run: ruff check src/enaya tests --select=E,F,W --ignore=E501
 
       - name: Run Ruff (format check)
         run: ruff format --check src/enaya tests
