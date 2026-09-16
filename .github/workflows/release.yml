@@ -56,14 +56,10 @@ jobs:
           echo "Version verified: $PROJECT_VERSION"
 
       - name: Build package
-        run: |
-          source .venv/bin/activate
-          python -m build
+        run: uv run python -m build
 
       - name: Verify package
-        run: |
-          source .venv/bin/activate
-          twine check dist/*
+        run: uv run twine check dist/*
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -109,9 +105,7 @@ jobs:
         run: uv sync --locked --python 3.11 --extra dev
 
       - name: Build package
-        run: |
-          source .venv/bin/activate
-          python -m build
+        run: uv run python -m build
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
