@@ -18,13 +18,26 @@ ARXIV_SEARCH_SCHEMA = {
     "type": "function",
     "function": {
         "name": "arxiv_search",
-        "description": "Search arXiv for academic papers. Returns papers with titles, authors, abstracts, and PDF URLs.",
+        "description": (
+            "Search arXiv for academic papers. Returns papers with titles, "
+            "authors, abstracts, and PDF URLs."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
-                "query": {"type": "string", "description": "Search query (supports arXiv search syntax)"},
-                "max_results": {"type": "integer", "description": "Maximum number of results (default: 10, max: 50)", "default": 10},
-                "category": {"type": "string", "description": "arXiv category filter (e.g., cs.AI, cs.LG, stat.ML)"},
+                "query": {
+                    "type": "string",
+                    "description": "Search query (supports arXiv search syntax)",
+                },
+                "max_results": {
+                    "type": "integer",
+                    "description": "Maximum number of results (default: 10, max: 50)",
+                    "default": 10,
+                },
+                "category": {
+                    "type": "string",
+                    "description": "arXiv category filter (e.g., cs.AI, cs.LG, stat.ML)",
+                },
             },
             "required": ["query"],
         },
@@ -34,8 +47,9 @@ ARXIV_SEARCH_SCHEMA = {
 
 def check_arxiv_search_requirements() -> bool:
     try:
-        import arxiv
-        return True
+        import importlib.util
+
+        return importlib.util.find_spec("arxiv") is not None
     except ImportError:
         return False
 
@@ -59,15 +73,17 @@ def arxiv_search_tool(query: str, max_results: int = 10, category: str = None) -
 
         results = []
         for paper in client.results(search):
-            results.append({
-                "title": paper.title,
-                "authors": [str(a) for a in paper.authors],
-                "abstract": paper.summary,
-                "pdf_url": paper.pdf_url,
-                "entry_id": paper.entry_id,
-                "published": paper.published.isoformat() if paper.published else None,
-                "categories": paper.categories,
-            })
+            results.append(
+                {
+                    "title": paper.title,
+                    "authors": [str(a) for a in paper.authors],
+                    "abstract": paper.summary,
+                    "pdf_url": paper.pdf_url,
+                    "entry_id": paper.entry_id,
+                    "published": paper.published.isoformat() if paper.published else None,
+                    "categories": paper.categories,
+                }
+            )
 
         return json.dumps({"papers": results, "count": len(results)})
 
@@ -94,12 +110,24 @@ PAPER_ANALYZE_SCHEMA = {
     "type": "function",
     "function": {
         "name": "paper_analyze",
-        "description": "Analyze an academic paper from PDF URL or arXiv ID. Extracts key findings, methodology, results, and limitations.",
+        "description": (
+            "Analyze an academic paper from PDF URL or arXiv ID. Extracts "
+            "key findings, methodology, results, and limitations."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
-                "source": {"type": "string", "description": "arXiv ID (e.g., 2301.00001) or PDF URL"},
-                "focus": {"type": "string", "description": "Specific aspect to focus on (methodology, results, limitations, etc.)"},
+                "source": {
+                    "type": "string",
+                    "description": "arXiv ID (e.g., 2301.00001) or PDF URL",
+                },
+                "focus": {
+                    "type": "string",
+                    "description": (
+                        "Specific aspect to focus on (methodology, results, "
+                        "limitations, etc.)"
+                    ),
+                },
             },
             "required": ["source"],
         },
@@ -109,9 +137,12 @@ PAPER_ANALYZE_SCHEMA = {
 
 def check_paper_analyze_requirements() -> bool:
     try:
-        import arxiv
-        import pdfplumber
-        return True
+        import importlib.util
+
+        return (
+            importlib.util.find_spec("arxiv") is not None
+            and importlib.util.find_spec("pdfplumber") is not None
+        )
     except ImportError:
         return False
 
@@ -157,19 +188,25 @@ def paper_analyze_tool(source: str, focus: str = None) -> str:
             full_text = full_text[:25000] + "\n\n[TRUNCATED]\n\n" + full_text[-25000:]
 
         # Build analysis prompt
-        focus_instruction = f"\nFocus particularly on: {focus}" if focus else ""
 
-        return json.dumps({
-            "title": title,
-            "source": source,
-            "full_text": full_text,
-            "focus": focus,
-            "word_count": len(full_text.split()),
-            "note": "Full text extracted. Use with synthesis tools or provide to LLM for analysis.",
-        })
+        return json.dumps(
+            {
+                "title": title,
+                "source": source,
+                "full_text": full_text,
+                "focus": focus,
+                "word_count": len(full_text.split()),
+                "note": (
+                    "Full text extracted. Use with synthesis tools or "
+                    "provide to LLM for analysis."
+                ),
+            }
+        )
 
     except ImportError:
-        return json.dumps({"error": "Required packages not installed. Run: pip install arxiv pdfplumber requests"})
+        return json.dumps(
+            {"error": "Required packages not installed. Run: pip install arxiv pdfplumber requests"}
+        )
     except Exception as e:
         return json.dumps({"error": str(e)})
 
@@ -191,12 +228,18 @@ SOURCE_VALIDATOR_SCHEMA = {
     "type": "function",
     "function": {
         "name": "source_validator",
-        "description": "Validate credibility of a source (website, paper, article). Returns credibility score and bias assessment.",
+        "description": (
+            "Validate credibility of a source (website, paper, article). "
+            "Returns credibility score and bias assessment."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
                 "url": {"type": "string", "description": "URL to validate"},
-                "claim": {"type": "string", "description": "Specific claim to verify against source"},
+                "claim": {
+                    "type": "string",
+                    "description": "Specific claim to verify against source",
+                },
             },
             "required": ["url"],
         },
@@ -222,9 +265,16 @@ def source_validator_tool(url: str, claim: str = None) -> str:
 
         # Domain authority
         high_authority = [
-            "arxiv.org", "doi.org", "pubmed.ncbi.nlm.nih.gov", "scholar.google.com",
-            "github.com", "docs.python.org", "developer.mozilla.org",
-            "kubernetes.io", "aws.amazon.com", "cloud.google.com",
+            "arxiv.org",
+            "doi.org",
+            "pubmed.ncbi.nlm.nih.gov",
+            "scholar.google.com",
+            "github.com",
+            "docs.python.org",
+            "developer.mozilla.org",
+            "kubernetes.io",
+            "aws.amazon.com",
+            "cloud.google.com",
         ]
         if any(d in domain for d in high_authority):
             score += 30
@@ -259,15 +309,20 @@ def source_validator_tool(url: str, claim: str = None) -> str:
         else:
             level = "very_low"
 
-        return json.dumps({
-            "url": url,
-            "domain": domain,
-            "credibility_score": score,
-            "credibility_level": level,
-            "factors": factors,
-            "claim_verified": claim is not None,
-            "note": "Heuristic assessment only. Manual verification recommended for critical claims.",
-        })
+        return json.dumps(
+            {
+                "url": url,
+                "domain": domain,
+                "credibility_score": score,
+                "credibility_level": level,
+                "factors": factors,
+                "claim_verified": claim is not None,
+                "note": (
+                    "Heuristic assessment only. Manual verification "
+                    "recommended for critical claims."
+                ),
+            }
+        )
 
     except Exception as e:
         return json.dumps({"error": str(e)})

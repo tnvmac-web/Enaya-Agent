@@ -4,19 +4,20 @@ Enaya Agent - Pets/Mascots System
 Animated mascots that react to agent activity across CLI, TUI, and desktop.
 """
 
-from __future__ import animations
-
 import asyncio
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
 
 # =============================================================================
 # Pet Data Classes
 # =============================================================================
 
+
 @dataclass
 class PetState:
     """Current state of a pet."""
+
     name: str
     mood: str = "happy"  # happy, sad, excited, sleeping, thinking, working
     energy: float = 1.0  # 0.0 to 1.0
@@ -29,6 +30,7 @@ class PetState:
 @dataclass
 class PetAnimation:
     """Animation frame data."""
+
     frames: list[str]
     frame_duration: float = 0.1
     loop: bool = True
@@ -37,6 +39,7 @@ class PetAnimation:
 # =============================================================================
 # Pet Base Class
 # =============================================================================
+
 
 class PetBase(ABC):
     """Base class for pet mascots."""
@@ -77,6 +80,7 @@ class PetBase(ABC):
 
         # Simple frame selection based on time
         import time
+
         frame_idx = int(time.time() * 10) % len(frames)
         return frames[frame_idx]
 
@@ -113,8 +117,6 @@ class PetBase(ABC):
 
     def _update_state(self) -> None:
         """Update pet state over time."""
-        import time
-        now = time.time()
 
         # Decrease energy over time
         if self.state.energy > 0:
@@ -143,6 +145,7 @@ class PetBase(ABC):
     def interact(self, interaction: str) -> dict:
         """Handle user interaction."""
         import time
+
         self.state.last_interaction = time.time()
 
         if interaction == "pet":
@@ -186,6 +189,7 @@ class PetBase(ABC):
 # =============================================================================
 # Built-in Pets
 # =============================================================================
+
 
 class EnayaBot(PetBase):
     """Default Enaya bot mascot."""
@@ -315,6 +319,7 @@ class TerminalTurtle(PetBase):
 # Pet Manager
 # =============================================================================
 
+
 class PetManager:
     """Manages pet mascots across surfaces."""
 
@@ -341,10 +346,7 @@ class PetManager:
         return self.active_pet
 
     def list_pets(self) -> list[dict]:
-        return [
-            {"name": name, "active": pet == self.active_pet}
-            for name, pet in self.pets.items()
-        ]
+        return [{"name": name, "active": pet == self.active_pet} for name, pet in self.pets.items()]
 
     async def start_all(self) -> None:
         for pet in self.pets.values():

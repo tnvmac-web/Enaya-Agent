@@ -11,6 +11,7 @@ from dataclasses import dataclass
 @dataclass
 class CredibilityAssessment:
     """Credibility assessment of a source."""
+
     url: str
     domain: str
     score: float  # 0-100
@@ -31,15 +32,19 @@ class SourceValidator:
     def validate(self, url: str, claim: str = None) -> CredibilityAssessment:
         """Validate a source's credibility."""
         # Use agent's source_validator tool
-        result = self.agent.execute_tool({
-            "function": {
-                "name": "source_validator",
-                "arguments": {"url": url, "claim": claim or ""}
+        result = self.agent.execute_tool(
+            {
+                "function": {
+                    "name": "source_validator",
+                    "arguments": {"url": url, "claim": claim or ""},
+                },
+                "id": "source_validator_1",
             },
-            "id": "source_validator_1"
-        }, task_id="source_validation")
+            task_id="source_validation",
+        )
 
         import json
+
         try:
             data = json.loads(result)
             return CredibilityAssessment(
@@ -51,7 +56,7 @@ class SourceValidator:
                 bias_indicators=[],
                 claim_verified=data.get("claim_verified", False),
             )
-        except:
+        except Exception:
             return CredibilityAssessment(
                 url=url,
                 domain="",

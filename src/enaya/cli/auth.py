@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 @dataclass
 class OAuthConfig:
     """OAuth configuration for providers that use OAuth."""
+
     client_id: str
     client_secret: str
     auth_url: str
@@ -23,6 +24,7 @@ class OAuthConfig:
 @dataclass
 class ProviderConfig:
     """Provider configuration metadata."""
+
     env_vars: list[str] = field(default_factory=list)  # Priority order
     base_url: str | None = None
     api_mode: str = "chat_completions"  # chat_completions, codex_responses, anthropic_messages
@@ -46,7 +48,6 @@ PROVIDER_REGISTRY: dict[str, ProviderConfig] = {
         api_mode="chat_completions",
         fallback_models=["anthropic/claude-3.5-sonnet", "google/gemini-1.5-pro"],
     ),
-
     # OpenAI
     "openai": ProviderConfig(
         env_vars=["OPENAI_API_KEY"],
@@ -54,7 +55,6 @@ PROVIDER_REGISTRY: dict[str, ProviderConfig] = {
         api_mode="chat_completions",
         fallback_models=["gpt-4o", "gpt-4o-mini"],
     ),
-
     # Anthropic (native)
     "anthropic": ProviderConfig(
         env_vars=["ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"],
@@ -62,7 +62,6 @@ PROVIDER_REGISTRY: dict[str, ProviderConfig] = {
         api_mode="anthropic_messages",
         fallback_models=["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022"],
     ),
-
     # NVIDIA NIM
     "nvidia": ProviderConfig(
         env_vars=["NVIDIA_API_KEY"],
@@ -70,7 +69,6 @@ PROVIDER_REGISTRY: dict[str, ProviderConfig] = {
         api_mode="chat_completions",
         fallback_models=["nvidia/nemotron-3-ultra", "nvidia/llama-3.1-nemotron-70b-instruct"],
     ),
-
     # Google/Gemini
     "google": ProviderConfig(
         env_vars=["GOOGLE_API_KEY", "GEMINI_API_KEY"],
@@ -78,7 +76,6 @@ PROVIDER_REGISTRY: dict[str, ProviderConfig] = {
         api_mode="chat_completions",
         fallback_models=["gemini-1.5-pro", "gemini-1.5-flash"],
     ),
-
     # Ollama (local)
     "ollama": ProviderConfig(
         env_vars=["OLLAMA_HOST"],
@@ -86,7 +83,6 @@ PROVIDER_REGISTRY: dict[str, ProviderConfig] = {
         api_mode="chat_completions",
         fallback_models=["llama3.1", "llama3.2", "mistral"],
     ),
-
     # LM Studio (local)
     "lmstudio": ProviderConfig(
         env_vars=["LMSTUDIO_HOST"],
@@ -94,7 +90,6 @@ PROVIDER_REGISTRY: dict[str, ProviderConfig] = {
         api_mode="chat_completions",
         fallback_models=["local-model"],
     ),
-
     # Custom OpenAI-compatible
     "custom": ProviderConfig(
         env_vars=["CUSTOM_API_KEY"],

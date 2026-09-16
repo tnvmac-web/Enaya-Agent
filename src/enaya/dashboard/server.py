@@ -22,11 +22,17 @@ async def dashboard():
     """Serve the main dashboard."""
     if DASHBOARD_PATH.exists():
         return HTMLResponse(DASHBOARD_PATH.read_text())
-    return HTMLResponse("<h1>Dashboard not built</h1><p>Run: npm run build in src/enaya/dashboard</p>")
+    return HTMLResponse(
+        "<h1>Dashboard not built</h1><p>Run: npm run build in src/enaya/dashboard</p>"
+    )
 
 
 @app.get("/api/chat")
-async def chat_endpoint(message: str, model: str = "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free", stream: bool = False):
+async def chat_endpoint(
+    message: str,
+    model: str = "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free",
+    stream: bool = False,
+):
     """Chat API endpoint for the dashboard."""
     from enaya.run_agent import create_agent
 
@@ -36,9 +42,11 @@ async def chat_endpoint(message: str, model: str = "openrouter:nvidia/nemotron-3
     if stream:
         # Return as SSE
         from fastapi.responses import StreamingResponse
+
         async def generate():
             yield f"data: {result}\n\n"
             yield "data: [DONE]\n\n"
+
         return StreamingResponse(generate(), media_type="text/event-stream")
 
     return {"response": result, "model": model}
@@ -55,6 +63,7 @@ async def websocket_chat(websocket: WebSocket):
             model = data.get("model", "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free")
 
             from enaya.run_agent import create_agent
+
             agent = create_agent(model=model)
             result = agent.run_conversation(message)
 
@@ -67,4 +76,5 @@ async def websocket_chat(websocket: WebSocket):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8080)

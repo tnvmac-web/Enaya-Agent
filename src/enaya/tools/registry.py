@@ -133,6 +133,7 @@ class ToolRegistry:
             # Execute handler
             if tool.is_async:
                 import asyncio
+
                 result = asyncio.run(tool.handler(args, task_id=task_id))
             else:
                 result = tool.handler(args, task_id=task_id)
@@ -158,19 +159,24 @@ class ToolRegistry:
         # Import all tool modules to trigger registration
         # Order matters for dependencies
         try:
-            # Enaya-specific tools
-            from enaya.tools import (
-                code_execution_tool,
-                delegate_tool,
-                delegation_tools,
-                file_tools,
-                mcp_tool,
-                planning_tools,
-                research_tools,
-                synthesis_tools,
-                terminal_tool,
-                web_tools,
-            )
+            import importlib.util
+
+            # Enaya-specific tools (lazy-load via importlib)
+            tool_modules = [
+                "code_execution_tool",
+                "delegate_tool",
+                "delegation_tools",
+                "file_tools",
+                "mcp_tool",
+                "planning_tools",
+                "research_tools",
+                "synthesis_tools",
+                "terminal_tool",
+                "web_tools",
+            ]
+            for module in tool_modules:
+                if importlib.util.find_spec(f".{module}", "enaya.tools"):
+                    __import__(f"enaya.tools.{module}")
         except ImportError:
             pass  # Tools not yet implemented
 

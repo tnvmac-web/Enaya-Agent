@@ -15,6 +15,7 @@ from pathlib import Path
 @dataclass
 class MemoryEntry:
     """A memory entry with metadata."""
+
     id: str
     layer: str  # session, episodic, semantic, procedural, project
     content: str
@@ -44,6 +45,7 @@ class FiveLayerMemory:
     def _init_databases(self) -> None:
         """Initialize SQLite databases for each layer."""
         import os
+
         enaya_home = Path(os.environ.get("ENAYA_HOME", Path.home() / ".enaya"))
         if self.profile != "default":
             enaya_home = enaya_home / "profiles" / self.profile
@@ -84,8 +86,12 @@ class FiveLayerMemory:
             )
         """)
         conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{layer}_tags ON {layer}_memory(tags)")
-        conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{layer}_importance ON {layer}_memory(importance)")
-        conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{layer}_created ON {layer}_memory(created_at)")
+        conn.execute(
+            f"CREATE INDEX IF NOT EXISTS idx_{layer}_importance ON {layer}_memory(importance)"
+        )
+        conn.execute(
+            f"CREATE INDEX IF NOT EXISTS idx_{layer}_created ON {layer}_memory(created_at)"
+        )
 
     def store(
         self,
@@ -98,6 +104,7 @@ class FiveLayerMemory:
     ) -> str:
         """Store a memory entry in a layer."""
         import uuid
+
         entry_id = entry_id or str(uuid.uuid4())[:12]
         now = datetime.now().timestamp()
         tags_json = json.dumps(tags or [])
@@ -106,10 +113,14 @@ class FiveLayerMemory:
         if not conn:
             raise ValueError(f"Unknown layer: {layer}")
 
-        conn.execute(f"""
-            INSERT INTO {layer}_memory (id, content, tags, importance, created_at, updated_at, source)
+        conn.execute(
+            f"""
+            INSERT INTO {layer}_memory
+            (id, content, tags, importance, created_at, updated_at, source)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (entry_id, content, tags_json, importance, now, now, source))
+            """,
+            (entry_id, content, tags_json, importance, now, now, source),
+        )
         conn.commit()
         return entry_id
 
@@ -141,17 +152,19 @@ class FiveLayerMemory:
         cursor = conn.execute(sql, params)
         results = []
         for row in cursor:
-            results.append(MemoryEntry(
-                id=row[0],
-                layer=layer,
-                content=row[1],
-                tags=json.loads(row[2]) if row[2] else [],
-                importance=row[3],
-                created_at=datetime.fromtimestamp(row[4]),
-                updated_at=datetime.fromtimestamp(row[5]),
-                access_count=row[6],
-                source=row[7] or "",
-            ))
+            results.append(
+                MemoryEntry(
+                    id=row[0],
+                    layer=layer,
+                    content=row[1],
+                    tags=json.loads(row[2]) if row[2] else [],
+                    importance=row[3],
+                    created_at=datetime.fromtimestamp(row[4]),
+                    updated_at=datetime.fromtimestamp(row[5]),
+                    access_count=row[6],
+                    source=row[7] or "",
+                )
+            )
         return results
 
     def update_access(self, layer: str, entry_id: str) -> None:
@@ -160,11 +173,14 @@ class FiveLayerMemory:
         if not conn:
             return
         now = datetime.now().timestamp()
-        conn.execute(f"""
+        conn.execute(
+            f"""
             UPDATE {layer}_memory
             SET access_count = access_count + 1, updated_at = ?
             WHERE id = ?
-        """, (now, entry_id))
+        """,
+            (now, entry_id),
+        )
         conn.commit()
 
     def delete(self, layer: str, entry_id: str) -> bool:
@@ -197,6 +213,7 @@ class FiveLayerMemory:
 # =============================================================================
 # Convenience Functions
 # =============================================================================
+
 
 def create_memory_system(profile: str = "default", project_path: str = None) -> FiveLayerMemory:
     """Create a five-layer memory system."""

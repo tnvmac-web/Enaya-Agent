@@ -19,6 +19,7 @@ from pathlib import Path
 # Kanban Data Classes
 # =============================================================================
 
+
 class TaskStatus(Enum):
     BACKLOG = "backlog"
     TODO = "todo"
@@ -38,6 +39,7 @@ class TaskPriority(Enum):
 @dataclass
 class KanbanTask:
     """Kanban task/card."""
+
     id: str
     board_id: str
     column_id: str
@@ -58,6 +60,7 @@ class KanbanTask:
 @dataclass
 class KanbanColumn:
     """Kanban board column."""
+
     id: str
     board_id: str
     name: str
@@ -70,6 +73,7 @@ class KanbanColumn:
 @dataclass
 class KanbanBoard:
     """Kanban board."""
+
     id: str
     name: str
     description: str = ""
@@ -83,6 +87,7 @@ class KanbanBoard:
 # =============================================================================
 # Kanban Store
 # =============================================================================
+
 
 class KanbanStore:
     """SQLite-backed Kanban storage."""
@@ -179,15 +184,6 @@ class KanbanStore:
         board_id = str(uuid.uuid4())[:12]
         now = time.time()
 
-        board = KanbanBoard(
-            id=board_id,
-            name=name,
-            description=description,
-            owner=owner,
-            created_at=now,
-            updated_at=now,
-        )
-
         # Add default columns
         default_columns = [
             ("backlog", "Backlog", TaskStatus.BACKLOG, 0),
@@ -198,17 +194,25 @@ class KanbanStore:
         ]
 
         with self._get_connection() as conn:
-            conn.execute("""
-                INSERT INTO boards (id, name, description, owner, created_at, updated_at, metadata)
+            conn.execute(
+                """
+                INSERT INTO boards
+                (id, name, description, owner, created_at, updated_at, metadata)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (board_id, name, description, owner, now, now, "{}"))
+                """,
+                (board_id, name, description, owner, now, now, "{}"),
+            )
 
             for i, (col_id, name, status, order) in enumerate(default_columns):
                 col_uuid = str(uuid.uuid4())[:12]
-                conn.execute("""
-                    INSERT INTO columns (id, board_id, name, status, order_num, color)
+                conn.execute(
+                    """
+                    INSERT INTO columns
+                    (id, board_id, name, status, order_num, color)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """, (col_uuid, board_id, name, status.value, order, "#58a6ff"))
+                    """,
+                    (col_uuid, board_id, name, status.value, order, "#58a6ff"),
+                )
 
         return self.get_board(board_id)
 
@@ -229,7 +233,9 @@ class KanbanStore:
             )
 
             # Load columns
-            cols = conn.execute("SELECT * FROM columns WHERE board_id = ? ORDER BY order_num", (board_id,)).fetchall()
+            cols = conn.execute(
+                "SELECT * FROM columns WHERE board_id = ? ORDER BY order_num", (board_id,)
+            ).fetchall()
             board.columns = [
                 KanbanColumn(
                     id=c["id"],
@@ -259,18 +265,25 @@ class KanbanStore:
     # Column Operations
     # =============================================================================
 
-    def add_column(self, board_id: str, name: str, status: TaskStatus, color: str = "#58a6ff") -> KanbanColumn:
+    def add_column(
+        self, board_id: str, name: str, status: TaskStatus, color: str = "#58a6ff"
+    ) -> KanbanColumn:
         column_id = str(uuid.uuid4())[:12]
 
         with self._get_connection() as conn:
             # Get max order
-            max_order = conn.execute("SELECT MAX(order_num) FROM columns WHERE board_id = ?", (board_id,)).fetchone()
+            max_order = conn.execute(
+                "SELECT MAX(order_num) FROM columns WHERE board_id = ?", (board_id,)
+            ).fetchone()
             order = (max_order[0] or -1) + 1
 
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO columns (id, board_id, name, status, order_num, color)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (column_id, board_id, name, status.value, order, color))
+            """,
+                (column_id, board_id, name, status.value, order, color),
+            )
 
         return KanbanColumn(
             id=column_id,
@@ -317,7 +330,10 @@ class KanbanStore:
         """Reorder columns by providing list of column IDs in new order."""
         with self._get_connection() as conn:
             for i, col_id in enumerate(column_order):
-                conn.execute("UPDATE columns SET order_num = ? WHERE id = ? AND board_id = ?", (i, col_id, board_id))
+                conn.execute(
+                    "UPDATE columns SET order_num = ? WHERE id = ? AND board_id = ?",
+                    (i, col_id, board_id),
+                )
             return True
 
     # =============================================================================
@@ -354,14 +370,29 @@ class KanbanStore:
         )
 
         with self._get_connection() as conn:
-            conn.execute("""
-                INSERT INTO tasks (id, board_id, column_id, title, description, status, priority, assignee, labels, due_date, created_at, updated_at, metadata)
+            conn.execute(
+                """
+                INSERT INTO tasks
+                (id, board_id, column_id, title, description, status, priority,
+                 assignee, labels, due_date, created_at, updated_at, metadata)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                task_id, board_id, column_id, title, description,
-                TaskStatus.BACKLOG.value, priority.value, assignee,
-                json.dumps(labels or []), due_date, now, now, "{}"
-            ))
+                """,
+                (
+                    task_id,
+                    board_id,
+                    column_id,
+                    title,
+                    description,
+                    TaskStatus.BACKLOG.value,
+                    priority.value,
+                    assignee,
+                    json.dumps(labels or []),
+                    due_date,
+                    now,
+                    now,
+                    "{}",
+                ),
+            )
 
         return task
 
@@ -372,7 +403,9 @@ class KanbanStore:
                 return None
             return self._row_to_task(row)
 
-    def get_tasks(self, board_id: str = None, column_id: str = None, assignee: str = None) -> list[KanbanTask]:
+    def get_tasks(
+        self, board_id: str = None, column_id: str = None, assignee: str = None
+    ) -> list[KanbanTask]:
         with self._get_connection() as conn:
             query = "SELECT * FROM tasks WHERE 1=1"
             params = []
@@ -418,12 +451,14 @@ class KanbanStore:
             if not task:
                 return False
 
-            old_column = task.column_id
             new_status = self._get_column_status(column_id)
 
-            now = time.time()
             updates = ["column_id = ?", "status = ?", "updated_at = ?"]
-            params = [column_id, new_status.value if new_status else TaskStatus.TODO.value, time.time()]
+            params = [
+                column_id,
+                new_status.value if new_status else TaskStatus.TODO.value,
+                time.time(),
+            ]
 
             if new_status == TaskStatus.IN_PROGRESS and not task.started_at:
                 updates.append("started_at = ?")
@@ -491,7 +526,7 @@ class KanbanStore:
         with self._get_connection() as conn:
             cursor = conn.execute(
                 "UPDATE tasks SET assignee = ?, updated_at = ? WHERE id = ?",
-                (assignee, time.time(), task_id)
+                (assignee, time.time(), task_id),
             )
             return cursor.rowcount > 0
 
@@ -524,8 +559,13 @@ class KanbanStore:
             return {}
 
         with self._get_connection() as conn:
-            columns = conn.execute("SELECT * FROM columns WHERE board_id = ? ORDER BY order_num", (board_id,)).fetchall()
-            tasks = conn.execute("SELECT * FROM tasks WHERE board_id = ?", (board_id,)).fetchall()
+            conn.execute(
+                "SELECT * FROM columns WHERE board_id = ? ORDER BY order_num",
+                (board_id,),
+            ).fetchall()
+            tasks = conn.execute(
+                "SELECT * FROM tasks WHERE board_id = ?", (board_id,)
+            ).fetchall()
 
         # Group tasks by column
         tasks_by_column = {}
@@ -569,6 +609,7 @@ class KanbanStore:
 # =============================================================================
 # Kanban Manager (High-level API)
 # =============================================================================
+
 
 class KanbanManager:
     """High-level Kanban manager with agent integration."""
@@ -625,6 +666,7 @@ class KanbanManager:
 # =============================================================================
 # Agent Integration
 # =============================================================================
+
 
 class KanbanAgent:
     """Agent that can interact with Kanban boards."""
@@ -683,6 +725,7 @@ class KanbanAgent:
 # CLI Commands
 # =============================================================================
 
+
 def kanban_create_board(name: str, description: str = "") -> str:
     manager = KanbanManager()
     board = manager.create_board(name, description)
@@ -698,7 +741,14 @@ def kanban_list_boards() -> list[dict]:
     ]
 
 
-def kanban_add_task(board_id: str, column: str, title: str, description: str = "", priority: str = "medium", assignee: str = None) -> str:
+def kanban_add_task(
+    board_id: str,
+    column: str,
+    title: str,
+    description: str = "",
+    priority: str = "medium",
+    assignee: str = None,
+) -> str:
     manager = KanbanManager()
     board = manager.store.get_board(board_id)
     if not board:
@@ -706,7 +756,14 @@ def kanban_add_task(board_id: str, column: str, title: str, description: str = "
         return ""
 
     # Find column by name or status
-    target_column = next((c for c in board.columns if c.name.lower() == column.lower() or c.status.value == column.lower()), None)
+    target_column = next(
+        (
+            c
+            for c in board.columns
+            if c.name.lower() == column.lower() or c.status.value == column.lower()
+        ),
+        None,
+    )
     if not target_column:
         target_column = board.columns[0]  # Default to first column
 
@@ -728,7 +785,14 @@ def kanban_move_task(task_id: str, column: str) -> bool:
     if not board:
         return False
 
-    target_column = next((c for c in board.columns if c.name.lower() == column.lower() or c.status.value == column.lower()), None)
+    target_column = next(
+        (
+            c
+            for c in board.columns
+            if c.name.lower() == column.lower() or c.status.value == column.lower()
+        ),
+        None,
+    )
     if not target_column:
         print(f"Column not found: {column}")
         return False

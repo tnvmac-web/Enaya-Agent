@@ -58,7 +58,7 @@ dev = [
 ]
 cli = ["nodeenv>=1.9"]
 browser = ["playwright>=1.40"]
-docker = ["python-docker>=0.7"]
+docker = ["docker>=7.0"]
 local-embeddings = ["sentence-transformers>=3.0"]
 tui = ["textual>=0.70", "textual-dev"]
 dashboard = ["fastapi>=0.100", "uvicorn>=0.23", "websockets>=11"]
@@ -79,6 +79,8 @@ include = ["enaya*"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "UP", "W", "C4", "C9"]
 ignore = ["C901", "ARG001", "ARG002", "TRY003"]
 per-file-ignores = { "tests/*" = ["S101", "SLF001"], "enaya/cli/*" = ["TRY003"] }

@@ -52,6 +52,7 @@ OPTIONAL_ENV_VARS = {
 # Config Loading
 # =============================================================================
 
+
 def load_config(profile: str = "default") -> dict[str, Any]:
     """
     Load configuration for a profile.

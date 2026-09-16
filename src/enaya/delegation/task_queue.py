@@ -22,6 +22,7 @@ class TaskPriority(Enum):
 @dataclass
 class QueuedTask:
     """A task in the delegation queue."""
+
     id: str
     task: str
     context: str

@@ -22,8 +22,10 @@ from enaya.run_agent import AIAgent, create_agent
 # ACP Protocol Types
 # =============================================================================
 
+
 class ACPRequest(BaseModel):
     """Base ACP request."""
+
     jsonrpc: str = "2.0"
     id: str | int
     method: str
@@ -32,6 +34,7 @@ class ACPRequest(BaseModel):
 
 class ACPResponse(BaseModel):
     """Base ACP response."""
+
     jsonrpc: str = "2.0"
     id: str | int
     result: Any = None
@@ -40,6 +43,7 @@ class ACPResponse(BaseModel):
 
 class ACPNotification(BaseModel):
     """ACP notification (no response expected)."""
+
     jsonrpc: str = "2.0"
     method: str
     params: dict = {}
@@ -48,6 +52,7 @@ class ACPNotification(BaseModel):
 # =============================================================================
 # Session Management
 # =============================================================================
+
 
 class ACPSession:
     """ACP session with agent."""
@@ -78,6 +83,7 @@ class ACPSession:
 # =============================================================================
 # ACP Server
 # =============================================================================
+
 
 class ACPServer:
     """ACP JSON-RPC server over stdio."""
@@ -114,12 +120,11 @@ class ACPServer:
             else:
                 return ACPResponse(
                     id=request.id,
-                    error={"code": -32601, "message": f"Method not found: {request.method}"}
+                    error={"code": -32601, "message": f"Method not found: {request.method}"},
                 )
         except Exception as e:
             return ACPResponse(
-                id=request.id,
-                error={"code": -32603, "message": f"Internal error: {str(e)}"}
+                id=request.id, error={"code": -32603, "message": f"Internal error: {str(e)}"}
             )
 
     async def _handle_initialize(self, request: ACPRequest) -> ACPResponse:
@@ -138,7 +143,7 @@ class ACPServer:
                     "name": "Enaya Agent",
                     "version": "0.1.0",
                 },
-            }
+            },
         )
 
     async def _handle_session_create(self, request: ACPRequest) -> ACPResponse:
@@ -162,10 +167,7 @@ class ACPServer:
         session = ACPSession(session_id, agent)
         self.sessions[session_id] = session
 
-        return ACPResponse(
-            id=request.id,
-            result={"sessionId": session_id}
-        )
+        return ACPResponse(id=request.id, result={"sessionId": session_id})
 
     async def _handle_session_delete(self, request: ACPRequest) -> ACPResponse:
         """Delete session."""
@@ -180,10 +182,9 @@ class ACPServer:
             id=request.id,
             result={
                 "sessions": [
-                    {"sessionId": sid, "model": s.agent.model}
-                    for sid, s in self.sessions.items()
+                    {"sessionId": sid, "model": s.agent.model} for sid, s in self.sessions.items()
                 ]
-            }
+            },
         )
 
     async def _handle_prompt_submit(self, request: ACPRequest) -> ACPResponse:
@@ -194,18 +195,14 @@ class ACPServer:
 
         if session_id not in self.sessions:
             return ACPResponse(
-                id=request.id,
-                error={"code": -32602, "message": f"Session not found: {session_id}"}
+                id=request.id, error={"code": -32602, "message": f"Session not found: {session_id}"}
             )
 
         session = self.sessions[session_id]
 
         if stream:
             # For streaming, we send notifications
-            return ACPResponse(
-                id=request.id,
-                result={"status": "streaming"}
-            )
+            return ACPResponse(id=request.id, result={"status": "streaming"})
         else:
             result = await session.prompt(prompt)
             return ACPResponse(
@@ -213,7 +210,7 @@ class ACPServer:
                 result={
                     "content": result,
                     "sessionId": session_id,
-                }
+                },
             )
 
     async def _handle_prompt_cancel(self, request: ACPRequest) -> ACPResponse:
@@ -231,7 +228,7 @@ class ACPServer:
                 "status": "ready",
                 "model": self.default_agent.model if self.default_agent else "unknown",
                 "provider": self.default_agent.provider if self.default_agent else "unknown",
-            }
+            },
         )
 
     async def run_stdio(self):
@@ -259,8 +256,7 @@ class ACPServer:
                 continue
             except Exception as e:
                 error_response = ACPResponse(
-                    id="unknown",
-                    error={"code": -32700, "message": f"Parse error: {str(e)}"}
+                    id="unknown", error={"code": -32700, "message": f"Parse error: {str(e)}"}
                 )
                 writer.write((error_response.model_dump_json() + "\n").encode())
                 await writer.drain()
@@ -271,10 +267,10 @@ class ACPServer:
 # =============================================================================
 
 
-
 # =============================================================================
 # Entry Point
 # =============================================================================
+
 
 def run_acp_server():
     """Run ACP server over stdio."""

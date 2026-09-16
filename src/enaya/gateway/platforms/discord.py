@@ -20,9 +20,11 @@ class DiscordAdapter:
     def __init__(self, runner: GatewayRunner):
         self.runner = runner
         self.bot_token = os.environ.get("DISCORD_BOT_TOKEN")
-        self.allowed_users = set(
-            os.environ.get("DISCORD_ALLOWED_USERS", "").split(",")
-        ) if os.environ.get("DISCORD_ALLOWED_USERS") else set()
+        self.allowed_users = (
+            set(os.environ.get("DISCORD_ALLOWED_USERS", "").split(","))
+            if os.environ.get("DISCORD_ALLOWED_USERS")
+            else set()
+        )
         self.allow_all = os.environ.get("DISCORD_ALLOW_ALL_USERS", "false").lower() == "true"
 
         self.bot: commands.Bot | None = None
@@ -122,7 +124,9 @@ class DiscordAdapter:
             color=0x00D4AA,
         )
         embed.add_field(name="/help", value="Show this help", inline=False)
-        embed.add_field(name="/delegate <task>", value="Delegate a complex task to a subagent", inline=False)
+        embed.add_field(
+            name="/delegate <task>", value="Delegate a complex task to a subagent", inline=False
+        )
         embed.add_field(name="/model", value="Show current model", inline=False)
         embed.add_field(name="/new", value="Start new session", inline=False)
         embed.add_field(name="/status", value="Show session status", inline=False)

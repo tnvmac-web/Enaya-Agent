@@ -6,6 +6,7 @@ Mirrors Hermes Agent's agent/context_compressor.py exactly.
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -13,7 +14,6 @@ import tiktoken
 
 if TYPE_CHECKING:
     from enaya.run_agent import AIAgent
-
 
 
 @dataclass
@@ -135,10 +135,12 @@ class ContextCompressor:
 
         # Add summary message (role chosen to avoid consecutive same-role violations)
         summary_role = "user" if (head and head[-1]["role"] == "assistant") else "assistant"
-        compressed.append({
-            "role": summary_role,
-            "content": f"[Conversation Summary]\n{summary}",
-        })
+        compressed.append(
+            {
+                "role": summary_role,
+                "content": f"[Conversation Summary]\n{summary}",
+            }
+        )
 
         # Add tail messages
         compressed.extend(tail)
@@ -153,6 +155,7 @@ class ContextCompressor:
         if not self.config.in_place:
             # Create new session ID for lineage tracking
             import uuid
+
             new_session_id = str(uuid.uuid4())
             agent.session_store.save_session(new_session_id, compressed)
             agent.session_id = new_session_id
@@ -196,7 +199,10 @@ Conversation:
         # Use agent's run_single_turn for compression (no history, no persistence)
         summary = agent.run_single_turn(
             summary_prompt,
-            system_prompt="You are a conversation summarizer. Produce concise, structured summaries that preserve all critical information.",
+            system_prompt=(
+                "You are a conversation summarizer. Produce concise, "
+                "structured summaries that preserve all critical information."
+            ),
         )
 
         return summary
@@ -211,7 +217,9 @@ Conversation:
                 lines.append(f"[Tool Result: {msg.get('tool_call_id', 'unknown')}]\n{content}")
             elif role == "assistant" and msg.get("tool_calls"):
                 for tc in msg["tool_calls"]:
-                    lines.append(f"[Tool Call: {tc['function']['name']}]\n{tc['function']['arguments']}")
+                    lines.append(
+                        f"[Tool Call: {tc['function']['name']}]\n{tc['function']['arguments']}"
+                    )
             else:
                 lines.append(f"[{role.upper()}]\n{content}")
         return "\n\n---\n\n".join(lines)
@@ -256,13 +264,6 @@ Conversation:
                 i += 1
 
         return result
-
-
-# =============================================================================
-# ContextEngine ABC (for plugins)
-# =============================================================================
-
-from abc import ABC, abstractmethod
 
 
 class ContextEngine(ABC):

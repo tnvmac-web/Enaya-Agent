@@ -16,6 +16,7 @@ from playwright.async_api import Browser, BrowserContext, Page, async_playwright
 # Browser Provider Interface
 # =============================================================================
 
+
 class BrowserProvider(ABC):
     """Abstract browser provider."""
 
@@ -69,10 +70,13 @@ class BrowserProvider(ABC):
 # Local Playwright Provider
 # =============================================================================
 
+
 class LocalPlaywrightProvider(BrowserProvider):
     """Local Chromium/Firefox/WebKit via Playwright."""
 
-    def __init__(self, browser_type: str = "chromium", headless: bool = True, args: list[str] = None):
+    def __init__(
+        self, browser_type: str = "chromium", headless: bool = True, args: list[str] = None
+    ):
         self.browser_type = browser_type
         self.headless = headless
         self.args = args or [
@@ -131,6 +135,7 @@ class LocalPlaywrightProvider(BrowserProvider):
 # Browserbase Cloud Provider
 # =============================================================================
 
+
 class BrowserbaseProvider(BrowserProvider):
     """Browserbase cloud browser provider."""
 
@@ -149,6 +154,7 @@ class BrowserbaseProvider(BrowserProvider):
 
         # Create session via Browserbase API
         import httpx
+
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 "https://api.browserbase.com/v1/sessions",
@@ -173,7 +179,11 @@ class BrowserbaseProvider(BrowserProvider):
         # Connect via CDP
         self._playwright = await async_playwright().start()
         self._browser = await self._playwright.chromium.connect_over_cdp(connect_url)
-        self._context = self._browser.contexts[0] if self._browser.contexts else await self._browser.new_context()
+        self._context = (
+            self._browser.contexts[0]
+            if self._browser.contexts
+            else await self._browser.new_context()
+        )
 
     async def close(self) -> None:
         if self._context:
@@ -186,6 +196,7 @@ class BrowserbaseProvider(BrowserProvider):
         # End session via API
         if self._session_id:
             import httpx
+
             async with httpx.AsyncClient() as client:
                 await client.delete(
                     f"https://api.browserbase.com/v1/sessions/{self._session_id}",
@@ -217,6 +228,7 @@ class BrowserbaseProvider(BrowserProvider):
 # =============================================================================
 # Browser Manager
 # =============================================================================
+
 
 class BrowserManager:
     """Manages browser sessions and provides high-level operations."""
@@ -264,12 +276,14 @@ class BrowserManager:
                 snippet_elem = await elem.query_selector(".result__snippet")
                 snippet = await snippet_elem.inner_text() if snippet_elem else ""
 
-                results.append({
-                    "title": title,
-                    "url": link,
-                    "snippet": snippet,
-                })
-            except:
+                results.append(
+                    {
+                        "title": title,
+                        "url": link,
+                        "snippet": snippet,
+                    }
+                )
+            except Exception:
                 continue
 
         return results
@@ -283,17 +297,22 @@ class BrowserManager:
         title = await page.title()
 
         # Extract main content
-        content = await page.evaluate("""
+        js_code = """
             () => {
                 // Remove scripts, styles, nav, footer
-                const remove = document.querySelectorAll('script, style, nav, footer, header, aside, .ads, .advertisement');
+                const remove = document.querySelectorAll(
+                    'script, style, nav, footer, header, aside, .ads, .advertisement'
+                );
                 remove.forEach(el => el.remove());
-                
+
                 // Get main content
-                const main = document.querySelector('main') || document.querySelector('article') || document.body;
+                const main = document.querySelector('main') ||
+                    document.querySelector('article') ||
+                    document.body;
                 return main.innerText;
             }
-        """)
+        """
+        content = await page.evaluate(js_code)
 
         return {
             "url": url,
@@ -301,7 +320,9 @@ class BrowserManager:
             "content": content[:50000],  # Limit size
         }
 
-    async def fill_form(self, url: str, fields: dict[str, str], submit_selector: str = None) -> dict:
+    async def fill_form(
+        self, url: str, fields: dict[str, str], submit_selector: str = None
+    ) -> dict:
         """Fill and optionally submit a form."""
         page = await self.get_page()
         await self.provider.navigate(page, url)
@@ -319,6 +340,7 @@ class BrowserManager:
 # =============================================================================
 # Browser Tool Integration
 # =============================================================================
+
 
 class BrowserTool:
     """Browser tool for agent integration."""
@@ -338,7 +360,9 @@ class BrowserTool:
         """Fill a form."""
         return await self.manager.fill_form(url, fields, submit)
 
-    async def screenshot(self, url: str = None, page_id: str = "default", full_page: bool = False) -> bytes:
+    async def screenshot(
+        self, url: str = None, page_id: str = "default", full_page: bool = False
+    ) -> bytes:
         """Take screenshot."""
         page = await self.manager.get_page(page_id)
         if url:
@@ -367,8 +391,16 @@ BROWSER_TOOL_SCHEMA = {
                 "query": {"type": "string", "description": "Search query"},
                 "fields": {"type": "object", "description": "Form fields (selector -> value)"},
                 "submit_selector": {"type": "string", "description": "Submit button selector"},
-                "page_id": {"type": "string", "description": "Page identifier", "default": "default"},
-                "full_page": {"type": "boolean", "description": "Full page screenshot", "default": False},
+                "page_id": {
+                    "type": "string",
+                    "description": "Page identifier",
+                    "default": "default",
+                },
+                "full_page": {
+                    "type": "boolean",
+                    "description": "Full page screenshot",
+                    "default": False,
+                },
             },
             "required": ["action"],
         },
@@ -385,7 +417,9 @@ async def browser_tool(action: str, **kwargs) -> str:
 
     try:
         if action == "search":
-            results = await manager.search_and_extract(kwargs.get("query", ""), kwargs.get("max_results", 5))
+            results = await manager.search_and_extract(
+                kwargs.get("query", ""), kwargs.get("max_results", 5)
+            )
             return json.dumps({"results": results})
 
         elif action == "extract":
@@ -404,7 +438,9 @@ async def browser_tool(action: str, **kwargs) -> str:
             page = await manager.get_page(kwargs.get("page_id", "default"))
             if kwargs.get("url"):
                 await manager.provider.navigate(page, kwargs["url"])
-            screenshot = await manager.provider.screenshot(page, full_page=kwargs.get("full_page", False))
+            screenshot = await manager.provider.screenshot(
+                page, full_page=kwargs.get("full_page", False)
+            )
             return json.dumps({"screenshot": screenshot.hex()})
 
         elif action == "fill_form":

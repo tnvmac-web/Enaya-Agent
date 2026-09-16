@@ -23,6 +23,7 @@ console = Console()
 # Main CLI Group
 # =============================================================================
 
+
 @click.group()
 @click.version_option(version="0.1.0", prog_name="enaya")
 @click.option("-p", "--profile", default="default", help="Profile name")
@@ -42,6 +43,7 @@ def cli(ctx: click.Context, profile: str):
 # =============================================================================
 # Chat Command
 # =============================================================================
+
 
 @cli.command()
 @click.argument("query", required=False)
@@ -108,7 +110,9 @@ def chat(
 def _run_interactive(agent: AIAgent) -> str:
     """Run interactive chat loop."""
     console.print("[green]Enaya Agent[/green] — Interactive mode (Ctrl+C to exit)")
-    console.print(f"Model: {agent.model} | Provider: {agent.provider} | Session: {agent.session_id[:8]}")
+    console.print(
+        f"Model: {agent.model} | Provider: {agent.provider} | Session: {agent.session_id[:8]}"
+    )
 
     while True:
         try:
@@ -133,6 +137,7 @@ def _run_interactive(agent: AIAgent) -> str:
 # =============================================================================
 # Model Command
 # =============================================================================
+
 
 @cli.command()
 @click.argument("model_spec", required=False)
@@ -161,7 +166,9 @@ def model(ctx: click.Context, model_spec: str, list_models: bool, provider: str)
     # Resolve and validate
     try:
         runtime = resolve_runtime_provider(provider=provider, model=model)
-        config["model"] = f"{runtime.provider}:{runtime.model}" if runtime.provider != "custom" else runtime.model
+        config["model"] = (
+            f"{runtime.provider}:{runtime.model}" if runtime.provider != "custom" else runtime.model
+        )
         config["provider"] = runtime.provider
         save_config(profile, config)
         console.print(f"[green]Model set to:[/green] {config['model']}")
@@ -180,6 +187,7 @@ def _list_models(provider: str = None):
 # Setup Command
 # =============================================================================
 
+
 @cli.command()
 @click.pass_context
 def setup(ctx: click.Context):
@@ -191,11 +199,15 @@ def setup(ctx: click.Context):
     console.print(f"Profile: {profile}")
 
     # Model selection
-    model = click.prompt("Model", default=config.get("model", "openrouter:anthropic/claude-sonnet-4"))
+    model = click.prompt(
+        "Model", default=config.get("model", "openrouter:anthropic/claude-sonnet-4")
+    )
     config["model"] = model
 
     # Provider
-    provider = click.prompt("Provider (optional)", default=config.get("provider", ""), show_default=False)
+    provider = click.prompt(
+        "Provider (optional)", default=config.get("provider", ""), show_default=False
+    )
     if provider:
         config["provider"] = provider
 
@@ -229,7 +241,9 @@ def _prompt_api_keys(config: dict):
     for key, label in keys.items():
         current = existing.get(key, "")
         masked = "*" * 8 + current[-4:] if current else ""
-        value = click.prompt(f"{label} API key", default=masked, show_default=False, hide_input=True)
+        value = click.prompt(
+            f"{label} API key", default=masked, show_default=False, hide_input=True
+        )
         if value and value != masked:
             new_keys[key] = value
 
@@ -243,6 +257,7 @@ def _prompt_api_keys(config: dict):
 # =============================================================================
 # Delegate Command
 # =============================================================================
+
 
 @cli.command()
 @click.argument("task")
@@ -272,6 +287,7 @@ def delegate(ctx: click.Context, task: str, model: str, provider: str, max_itera
 # Research Command
 # =============================================================================
 
+
 @cli.command()
 @click.argument("query")
 @click.option("--depth", type=click.Choice(["quick", "deep", "comprehensive"]), default="deep")
@@ -290,7 +306,11 @@ def research(ctx: click.Context, query: str, depth: str, sources: str):
     )
 
     agent = AIAgent(agent_config)
-    prompt = f"Research query: {query}\nDepth: {depth}\nSources: {sources}\n\nConduct thorough research and provide synthesized findings with citations."
+    prompt = (
+        f"Research query: {query}\nDepth: {depth}\nSources: {sources}\n\n"
+        "Conduct thorough research and provide synthesized findings "
+        "with citations."
+    )
     result = agent.run_conversation(prompt)
     console.print(result)
 
@@ -299,9 +319,12 @@ def research(ctx: click.Context, query: str, depth: str, sources: str):
 # Plan Command
 # =============================================================================
 
+
 @cli.command()
 @click.argument("goal")
-@click.option("--complexity", type=click.Choice(["simple", "moderate", "complex"]), default="moderate")
+@click.option(
+    "--complexity", type=click.Choice(["simple", "moderate", "complex"]), default="moderate"
+)
 @click.pass_context
 def plan(ctx: click.Context, goal: str, complexity: str):
     """Create a structured plan for a goal."""
@@ -316,7 +339,11 @@ def plan(ctx: click.Context, goal: str, complexity: str):
     )
 
     agent = AIAgent(agent_config)
-    prompt = f"Create a structured plan for: {goal}\nComplexity: {complexity}\n\nDecompose into tasks, define milestones, identify risks, and provide execution order."
+    prompt = (
+        f"Create a structured plan for: {goal}\nComplexity: {complexity}\n\n"
+        "Decompose into tasks, define milestones, identify risks, "
+        "and provide execution order."
+    )
     result = agent.run_conversation(prompt)
     console.print(result)
 
@@ -324,6 +351,7 @@ def plan(ctx: click.Context, goal: str, complexity: str):
 # =============================================================================
 # Gateway Commands
 # =============================================================================
+
 
 @cli.group()
 def gateway():
@@ -351,21 +379,26 @@ def gateway_stop(ctx: click.Context, stop_all: bool):
 # TUI Command
 # =============================================================================
 
+
 @cli.command()
 @click.pass_context
 def tui(ctx: click.Context):
     """Launch the Textual TUI interface."""
     try:
         from enaya.tui.main import run_tui
+
         run_tui()
     except ImportError:
-        console.print("[red]Error:[/red] TUI dependencies not installed. Run: pip install enaya-agent[tui]")
+        console.print(
+            "[red]Error:[/red] TUI dependencies not installed. Run: pip install enaya-agent[tui]"
+        )
         sys.exit(1)
 
 
 # =============================================================================
 # Dashboard Command
 # =============================================================================
+
 
 @cli.command()
 @click.option("--host", default="0.0.0.0", help="Host to bind")
@@ -377,16 +410,21 @@ def dashboard(ctx: click.Context, host: str, port: int):
         import uvicorn
 
         from enaya.dashboard.server import app
+
         console.print(f"[green]Starting dashboard on http://{host}:{port}[/green]")
         uvicorn.run(app, host=host, port=port)
     except ImportError:
-        console.print("[red]Error:[/red] Dashboard dependencies not installed. Run: pip install enaya-agent[dashboard]")
+        console.print(
+            "[red]Error:[/red] Dashboard dependencies not installed. "
+            "Run: pip install enaya-agent[dashboard]"
+        )
         sys.exit(1)
 
 
 # =============================================================================
 # API Server Command
 # =============================================================================
+
 
 @cli.command()
 @click.option("--host", default="0.0.0.0", help="Host to bind")
@@ -396,16 +434,21 @@ def api_server(ctx: click.Context, host: str, port: int):
     """Launch the OpenAI-compatible API server."""
     try:
         from enaya.api_server.main import run_api_server
+
         console.print(f"[green]Starting API server on http://{host}:{port}[/green]")
         run_api_server(host=host, port=port)
     except ImportError:
-        console.print("[red]Error:[/red] API server dependencies not installed. Run: pip install enaya-agent[api]")
+        console.print(
+            "[red]Error:[/red] API server dependencies not installed. "
+            "Run: pip install enaya-agent[api]"
+        )
         sys.exit(1)
 
 
 # =============================================================================
 # ACP Command
 # =============================================================================
+
 
 @cli.command()
 @click.option("--check", is_flag=True, help="Verify ACP dependencies")
@@ -416,7 +459,8 @@ def acp(ctx: click.Context, check: bool, setup: bool):
     if check:
         console.print("[yellow]Checking ACP dependencies...[/yellow]")
         try:
-            import pydantic
+            import pydantic  # noqa: F401
+
             console.print("[green]ACP dependencies OK[/green]")
         except ImportError:
             console.print("[red]Missing dependencies. Run: pip install enaya-agent[acp][/red]")
@@ -429,16 +473,20 @@ def acp(ctx: click.Context, check: bool, setup: bool):
 
     try:
         from enaya.acp_adapter.server import run_acp_server
+
         console.print("[green]Starting ACP server on stdio...[/green]")
         run_acp_server()
     except ImportError:
-        console.print("[red]Error:[/red] ACP dependencies not installed. Run: pip install enaya-agent[acp]")
+        console.print(
+            "[red]Error:[/red] ACP dependencies not installed. Run: pip install enaya-agent[acp]"
+        )
         sys.exit(1)
 
 
 # =============================================================================
 # Skills Command
 # =============================================================================
+
 
 @cli.command()
 @click.option("--list", "list_skills", is_flag=True, help="List available skills")
@@ -453,6 +501,7 @@ def skills(ctx: click.Context, list_skills: bool, enable: str, disable: str):
 # =============================================================================
 # Plugins Command
 # =============================================================================
+
 
 @cli.group()
 def plugins():
@@ -471,6 +520,7 @@ def plugins_doctor(ctx: click.Context, path: str):
 # =============================================================================
 # Cron Command
 # =============================================================================
+
 
 @cli.group()
 def cron():
@@ -492,6 +542,7 @@ def cron_add(ctx: click.Context, name: str, schedule: str, prompt: str):
 # Kanban Command
 # =============================================================================
 
+
 @cli.group()
 def kanban():
     """Kanban board management."""
@@ -505,6 +556,7 @@ def kanban():
 def kanban_create(ctx: click.Context, name: str, description: str):
     """Create a new kanban board."""
     from enaya.kanban.manager import kanban_create_board
+
     board_id = kanban_create_board(name, description)
     console.print(f"[green]Created board: {board_id}[/green]")
 
@@ -514,6 +566,7 @@ def kanban_create(ctx: click.Context, name: str, description: str):
 def kanban_list(ctx: click.Context):
     """List all kanban boards."""
     from enaya.kanban.manager import kanban_list_boards
+
     boards = kanban_list_boards()
     if not boards:
         console.print("[yellow]No boards found[/yellow]")
@@ -527,12 +580,23 @@ def kanban_list(ctx: click.Context):
 @click.argument("column")
 @click.argument("title")
 @click.option("--description", "-d", default="", help="Task description")
-@click.option("--priority", "-p", type=click.Choice(["low", "medium", "high", "critical"]), default="medium")
+@click.option(
+    "--priority", "-p", type=click.Choice(["low", "medium", "high", "critical"]), default="medium"
+)
 @click.option("--assignee", "-a", default=None, help="Assignee name")
 @click.pass_context
-def kanban_add_task(ctx: click.Context, board_id: str, column: str, title: str, description: str, priority: str, assignee: str):
+def kanban_add_task(
+    ctx: click.Context,
+    board_id: str,
+    column: str,
+    title: str,
+    description: str,
+    priority: str,
+    assignee: str,
+):
     """Add a task to a board."""
     from enaya.kanban.manager import kanban_add_task
+
     task_id = kanban_add_task(board_id, column, title, description, priority, assignee)
     if task_id:
         console.print(f"[green]Created task: {task_id}[/green]")
@@ -547,6 +611,7 @@ def kanban_add_task(ctx: click.Context, board_id: str, column: str, title: str, 
 def kanban_move(ctx: click.Context, task_id: str, column: str):
     """Move a task to a different column."""
     from enaya.kanban.manager import kanban_move_task
+
     success = kanban_move_task(task_id, column)
     if success:
         console.print(f"[green]Moved task {task_id} to {column}[/green]")
@@ -560,17 +625,19 @@ def kanban_move(ctx: click.Context, task_id: str, column: str):
 def kanban_view(ctx: click.Context, board_id: str):
     """View a kanban board."""
     from enaya.kanban.manager import kanban_board_view
+
     view = kanban_board_view(board_id)
     console.print(f"Board: {view.get('name', board_id)}")
-    for column in view.get('columns', []):
+    for column in view.get("columns", []):
         console.print(f"  {column['name']} ({column['status']}): {len(column['tasks'])} tasks")
-        for task in column['tasks']:
+        for task in column["tasks"]:
             console.print(f"    - {task['id'][:8]}: {task['title']} [{task['priority']}]")
 
 
 # =============================================================================
 # Config Command
 # =============================================================================
+
 
 @cli.command()
 @click.argument("key", required=False)
@@ -600,6 +667,7 @@ def config(ctx: click.Context, key: str, value: str, list_config: bool):
 # =============================================================================
 # Entry Point
 # =============================================================================
+
 
 def main():
     """Main entry point."""

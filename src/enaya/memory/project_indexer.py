@@ -15,6 +15,7 @@ from pathlib import Path
 @dataclass
 class ProjectIndex:
     """Indexed project information."""
+
     path: str
     nodes: int = 0
     edges: int = 0
@@ -40,7 +41,14 @@ class ProjectIndexer:
         candidates = [
             "codebase-memory-mcp",
             "codebase-memory-mcp.exe",
-            str(Path.home() / "AppData" / "Local" / "Programs" / "codebase-memory-mcp" / "codebase-memory-mcp.exe"),
+            str(
+                Path.home()
+                / "AppData"
+                / "Local"
+                / "Programs"
+                / "codebase-memory-mcp"
+                / "codebase-memory-mcp.exe"
+            ),
             "/usr/local/bin/codebase-memory-mcp",
         ]
         for c in candidates:
@@ -48,7 +56,7 @@ class ProjectIndexer:
                 result = subprocess.run([c, "--version"], capture_output=True, timeout=5)
                 if result.returncode == 0:
                     return c
-            except:
+            except Exception:
                 continue
         return None
 
@@ -124,7 +132,12 @@ class ProjectIndexer:
 
         for root, dirs, files in os.walk(self.project_path):
             # Skip common ignore dirs
-            dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ["node_modules", "__pycache__", "venv", "env", "dist", "build", ".git"]]
+            dirs[:] = [
+                d
+                for d in dirs
+                if not d.startswith(".")
+                and d not in ["node_modules", "__pycache__", "venv", "env", "dist", "build", ".git"]
+            ]
 
             for file in files:
                 ext = Path(file).suffix.lower()
@@ -145,14 +158,18 @@ class ProjectIndexer:
         # Save index
         index_file = self.index_dir / "index.json"
         with open(index_file, "w") as f:
-            json.dump({
-                "path": index.path,
-                "nodes": index.nodes,
-                "edges": index.edges,
-                "languages": index.languages,
-                "indexed_at": index.indexed_at,
-                "status": index.status,
-            }, f, indent=2)
+            json.dump(
+                {
+                    "path": index.path,
+                    "nodes": index.nodes,
+                    "edges": index.edges,
+                    "languages": index.languages,
+                    "indexed_at": index.indexed_at,
+                    "status": index.status,
+                },
+                f,
+                indent=2,
+            )
 
         return index
 
@@ -161,14 +178,21 @@ class ProjectIndexer:
         if self.mcp_binary:
             try:
                 result = subprocess.run(
-                    [self.mcp_binary, "query", str(self.project_path), query, "--limit", str(limit)],
+                    [
+                        self.mcp_binary,
+                        "query",
+                        str(self.project_path),
+                        query,
+                        "--limit",
+                        str(limit),
+                    ],
                     capture_output=True,
                     text=True,
                     timeout=30,
                 )
                 if result.returncode == 0:
                     return json.loads(result.stdout)
-            except:
+            except Exception:
                 pass
 
         # Basic fallback

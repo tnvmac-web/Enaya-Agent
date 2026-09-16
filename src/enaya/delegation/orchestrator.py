@@ -25,6 +25,7 @@ class SubagentStatus(Enum):
 @dataclass
 class SubagentTask:
     """A task delegated to a subagent."""
+
     id: str
     task: str
     context: str
@@ -209,22 +210,29 @@ Think step by step. Use tools as needed. Provide a thorough response.
 
     def collect_results(self, subagent_ids: list[str] = None) -> list[dict]:
         """Collect results from completed subagents."""
-        targets = subagent_ids or [tid for tid, t in self.subagents.items() if t.status == SubagentStatus.COMPLETED]
+        targets = subagent_ids or [
+            tid for tid, t in self.subagents.items() if t.status == SubagentStatus.COMPLETED
+        ]
         results = []
         for tid in targets:
             task = self.subagents.get(tid)
             if task and task.result:
-                results.append({
-                    "subagent_id": tid,
-                    "task": task.task,
-                    "result": task.result,
-                    "completed_at": task.completed_at.isoformat() if task.completed_at else None,
-                })
+                results.append(
+                    {
+                        "subagent_id": tid,
+                        "task": task.task,
+                        "result": task.result,
+                        "completed_at": task.completed_at.isoformat()
+                        if task.completed_at
+                        else None,
+                    }
+                )
         return results
 
     def wait_for_all(self, timeout: float = 300.0) -> list[dict]:
         """Wait for all subagents to complete."""
         import time
+
         start = time.time()
         while self._running_count > 0 or self.task_queue:
             if time.time() - start > timeout:

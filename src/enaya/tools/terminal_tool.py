@@ -20,14 +20,28 @@ TERMINAL_SCHEMA = {
     "type": "function",
     "function": {
         "name": "terminal",
-        "description": "Execute shell commands. Use for running commands, scripts, and system operations.",
+        "description": (
+            "Execute shell commands. Use for running commands, scripts, "
+            "and system operations."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
                 "command": {"type": "string", "description": "Shell command to execute"},
-                "cwd": {"type": "string", "description": "Working directory (default: current directory)"},
-                "timeout": {"type": "integer", "description": "Timeout in seconds (default: 60)", "default": 60},
-                "shell": {"type": "boolean", "description": "Run in shell (default: true)", "default": True},
+                "cwd": {
+                    "type": "string",
+                    "description": "Working directory (default: current directory)",
+                },
+                "timeout": {
+                    "type": "integer",
+                    "description": "Timeout in seconds (default: 60)",
+                    "default": 60,
+                },
+                "shell": {
+                    "type": "boolean",
+                    "description": "Run in shell (default: true)",
+                    "default": True,
+                },
             },
             "required": ["command"],
         },
@@ -53,29 +67,35 @@ def terminal_tool(command: str, cwd: str = None, timeout: int = 60, shell: bool 
             timeout=timeout,
         )
 
-        return json.dumps({
-            "success": result.returncode == 0,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "returncode": result.returncode,
-        })
+        return json.dumps(
+            {
+                "success": result.returncode == 0,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "returncode": result.returncode,
+            }
+        )
 
     except subprocess.TimeoutExpired:
-        return json.dumps({
-            "success": False,
-            "error": f"Command timed out after {timeout} seconds",
-            "stdout": "",
-            "stderr": "",
-            "returncode": -1,
-        })
+        return json.dumps(
+            {
+                "success": False,
+                "error": f"Command timed out after {timeout} seconds",
+                "stdout": "",
+                "stderr": "",
+                "returncode": -1,
+            }
+        )
     except Exception as e:
-        return json.dumps({
-            "success": False,
-            "error": str(e),
-            "stdout": "",
-            "stderr": "",
-            "returncode": -1,
-        })
+        return json.dumps(
+            {
+                "success": False,
+                "error": str(e),
+                "stdout": "",
+                "stderr": "",
+                "returncode": -1,
+            }
+        )
 
 
 registry.register(

@@ -17,6 +17,7 @@ from enaya.cli.models import _PROVIDER_MODELS
 @dataclass
 class RuntimeProvider:
     """Resolved provider configuration at runtime."""
+
     provider: str
     model: str
     base_url: str | None
@@ -91,7 +92,7 @@ def resolve_runtime_provider(
 
     # For OpenRouter, ensure model doesn't have provider prefix
     if provider == "openrouter" and resolved_model and resolved_model.startswith("openrouter:"):
-        resolved_model = resolved_model[len("openrouter:"):]
+        resolved_model = resolved_model[len("openrouter:") :]
 
     # Determine source
     source = "cli" if (provider or model or base_url or api_key) else "default"
@@ -123,12 +124,14 @@ def resolve_provider_client(runtime: RuntimeProvider) -> Any:
     """Create API client for the resolved provider."""
     if runtime.api_mode in ("chat_completions", "codex_responses"):
         from openai import OpenAI
+
         return OpenAI(
             api_key=runtime.api_key,
             base_url=runtime.base_url,
         )
     elif runtime.api_mode == "anthropic_messages":
         import anthropic
+
         return anthropic.Anthropic(
             api_key=runtime.api_key,
             base_url=runtime.base_url,
