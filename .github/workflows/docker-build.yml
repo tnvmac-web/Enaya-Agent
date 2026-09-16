@@ -83,9 +83,9 @@ jobs:
       - name: Test image runs
         run: |
           BRANCH_TAG="${{ github.ref_name }}"
-          docker run --rm ${{ env.REGISTRY }}/${{ needs.build.outputs.image-name }}:${BRANCH_TAG} enaya --help
+          docker run --rm ${{ env.REGISTRY }}/${{ needs.build.outputs.image-name }}:${BRANCH_TAG} --help
 
       - name: Test API server starts
         run: |
           BRANCH_TAG="${{ github.ref_name }}"
-          timeout 30 docker run --rm -p 8000:8000 ${{ env.REGISTRY }}/${{ needs.build.outputs.image-name }}:${BRANCH_TAG} enaya api-server || true
+          timeout 30 docker run --rm --entrypoint="" -p 8000:8000 ${{ env.REGISTRY }}/${{ needs.build.outputs.image-name }}:${BRANCH_TAG} enaya api-server || true
