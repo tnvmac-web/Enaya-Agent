@@ -16,8 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set working directory
 WORKDIR /app
 
-# Copy dependency files
+# Copy dependency files AND source code
 COPY pyproject.toml README.md ./
+COPY src/ ./src/
 
 # Install package in development mode with all extras
 RUN pip install --no-cache-dir --upgrade pip && \
@@ -48,9 +49,6 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Copy source code
 COPY --chown=enaya:enaya src/ ./src/
 COPY --chown=enaya:enaya pyproject.toml README.md ./
-
-# Install the package
-RUN pip install --no-cache-dir -e .
 
 # Create directories for config and data
 RUN mkdir -p /home/enaya/.enaya && chown -R enaya:enaya /home/enaya/.enaya
