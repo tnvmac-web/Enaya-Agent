@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 30
     outputs:
       image-digest: ${{ steps.build.outputs.digest }}
-      image-tags: ${{ steps.meta.outputs.tags }}
+      image-tag: ${{ steps.meta.outputs.tags }}
     steps:
       - uses: actions/checkout@v4
 
@@ -71,14 +71,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Pull built image
+      - name: Pull built image (branch tag)
         run: |
-          docker pull ${{ needs.build.outputs.image-tags }}
+          BRANCH_TAG="${{ github.ref_name }}"
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG}
 
       - name: Test image runs
         run: |
-          docker run --rm ${{ needs.build.outputs.image-tags }} enaya --help
+          BRANCH_TAG="${{ github.ref_name }}"
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG} enaya --help
 
       - name: Test API server starts
         run: |
-          timeout 30 docker run --rm -p 8000:8000 ${{ needs.build.outputs.image-tags }} enaya api-server || true
+          BRANCH_TAG="${{ github.ref_name }}"
+          timeout 30 docker run --rm -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG} enaya api-server || true
