@@ -973,7 +973,7 @@ mypy src/enaya/
 ```bash
 # Clone
 git clone https://github.com/tnvmac-web/Enaya-Agent.git
-cd enaya-agent
+cd Enaya-Agent
 
 # Create venv
 python -m venv venv

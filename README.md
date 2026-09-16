@@ -8,8 +8,8 @@ Built on Hermes Agent architecture principles — local-first, multi-provider, e
 
 ```bash
 # From source
-git clone https://github.com/yourusername/enaya-agent.git
-cd enaya-agent
+git clone https://github.com/tnvmac-web/Enaya-Agent.git
+cd Enaya-Agent
 pip install -e ".[dev]"
 
 # Or install directly (when published)
