@@ -12,6 +12,7 @@ from datetime import datetime
 @dataclass
 class PlanPhase:
     """A phase in an execution plan."""
+
     phase: int
     title: str
     tasks: list[dict]
@@ -22,6 +23,7 @@ class PlanPhase:
 @dataclass
 class ExecutionPlan:
     """A complete execution plan."""
+
     goal: str
     phases: list[PlanPhase] = field(default_factory=list)
     total_tasks: int = 0
@@ -40,15 +42,16 @@ class PlanBuilder:
 
     def build(self, subtasks: list[dict], parallel_groups: bool = True) -> ExecutionPlan:
         """Build an execution plan from subtasks."""
-        prompt = f"""Create a structured execution plan from these subtasks:
+        prompt = (
+            "Create a structured execution plan from these subtasks:\n\n"
+            f"Subtasks: {subtasks}\n"
+            f"Parallel Groups: {parallel_groups}\n\n"
+            "Return a plan with phases, each containing tasks that can run in "
+            "parallel.\n"
+            "Include dependencies, effort estimates, and milestones."
+        )
 
-Subtasks: {subtasks}
-Parallel Groups: {parallel_groups}
-
-Return a plan with phases, each containing tasks that can run in parallel.
-Include dependencies, effort estimates, and milestones."""
-
-        result = self.agent.run_conversation(prompt)
+        self.agent.run_conversation(prompt)
 
         # Parse into ExecutionPlan
         return ExecutionPlan(
@@ -64,7 +67,11 @@ Include dependencies, effort estimates, and milestones."""
     def estimate_resources(self, plan: ExecutionPlan) -> dict:
         """Estimate resource requirements for a plan."""
         return {
-            "total_subagents": sum(1 for p in plan.phases for t in p.tasks if t.get("can_parallel")),
-            "sequential_tasks": sum(1 for p in plan.phases for t in p.tasks if not t.get("can_parallel")),
+            "total_subagents": sum(
+                1 for p in plan.phases for t in p.tasks if t.get("can_parallel")
+            ),
+            "sequential_tasks": sum(
+                1 for p in plan.phases for t in p.tasks if not t.get("can_parallel")
+            ),
             "estimated_token_budget": 100000,
         }

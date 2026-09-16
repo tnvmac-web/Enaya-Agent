@@ -20,9 +20,11 @@ class TelegramAdapter:
     def __init__(self, runner: GatewayRunner):
         self.runner = runner
         self.bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
-        self.allowed_users = set(
-            os.environ.get("TELEGRAM_ALLOWED_USERS", "").split(",")
-        ) if os.environ.get("TELEGRAM_ALLOWED_USERS") else set()
+        self.allowed_users = (
+            set(os.environ.get("TELEGRAM_ALLOWED_USERS", "").split(","))
+            if os.environ.get("TELEGRAM_ALLOWED_USERS")
+            else set()
+        )
         self.allow_all = os.environ.get("TELEGRAM_ALLOW_ALL_USERS", "false").lower() == "true"
 
         self.app: Application | None = None
@@ -37,12 +39,8 @@ class TelegramAdapter:
         self.app = Application.builder().token(self.bot_token).build()
 
         # Add handlers
-        self.app.add_handler(
-            MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_message)
-        )
-        self.app.add_handler(
-            MessageHandler(filters.COMMAND, self._handle_command)
-        )
+        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_message))
+        self.app.add_handler(MessageHandler(filters.COMMAND, self._handle_command))
 
         # Initialize and start
         await self.app.initialize()
@@ -119,7 +117,7 @@ class TelegramAdapter:
                 "/status - Show session status"
             )
         elif command == "/delegate":
-            task = update.message.text[len("/delegate"):].strip()
+            task = update.message.text[len("/delegate") :].strip()
             if not task:
                 await update.message.reply_text("Usage: /delegate <task description>")
                 return
@@ -162,6 +160,7 @@ class TelegramAdapter:
 # =============================================================================
 # Register with runner
 # =============================================================================
+
 
 def setup_telegram(runner: GatewayRunner) -> TelegramAdapter | None:
     """Set up Telegram adapter if configured."""

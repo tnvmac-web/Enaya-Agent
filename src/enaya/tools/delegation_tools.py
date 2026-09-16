@@ -24,14 +24,33 @@ DELEGATE_TASK_SCHEMA = {
     "type": "function",
     "function": {
         "name": "delegate_task",
-        "description": "Delegate a complex task to a subagent with isolated context. Returns the subagent's final result.",
+        "description": (
+            "Delegate a complex task to a subagent with isolated context. "
+            "Returns the subagent's final result."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
-                "task": {"type": "string", "description": "The task description for the subagent"},
-                "context": {"type": "string", "description": "Background context the subagent needs (file paths, error messages, constraints)"},
-                "model": {"type": "string", "description": "Model for subagent (default: same as parent)"},
-                "max_iterations": {"type": "integer", "description": "Max iterations for subagent (default: 50)", "default": 50},
+                "task": {
+                    "type": "string",
+                    "description": "The task description for the subagent",
+                },
+                "context": {
+                    "type": "string",
+                    "description": (
+                        "Background context the subagent needs "
+                        "(file paths, error messages, constraints)"
+                    ),
+                },
+                "model": {
+                    "type": "string",
+                    "description": "Model for subagent (default: same as parent)",
+                },
+                "max_iterations": {
+                    "type": "integer",
+                    "description": "Max iterations for subagent (default: 50)",
+                    "default": 50,
+                },
                 "toolsets": {
                     "type": "array",
                     "items": {"type": "string"},
@@ -78,17 +97,20 @@ Task: {task}
 Context:
 {context}
 
-You are a subagent with isolated context. Complete this task and return your final result.
-Think step by step. Use tools as needed. Provide a thorough response with findings, code, or deliverables as appropriate.
+You are a subagent with isolated context. Complete this task and return
+your final result. Think step by step. Use tools as needed. Provide a
+thorough response with findings, code, or deliverables as appropriate.
 """
 
         result = subagent.run_conversation(prompt)
 
-        return json.dumps({
-            "success": True,
-            "subagent_id": subagent.session_id,
-            "result": result,
-        })
+        return json.dumps(
+            {
+                "success": True,
+                "subagent_id": subagent.session_id,
+                "result": result,
+            }
+        )
 
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -115,7 +137,10 @@ SUBAGENT_STATUS_SCHEMA = {
         "parameters": {
             "type": "object",
             "properties": {
-                "subagent_id": {"type": "string", "description": "Specific subagent ID to check (optional)"},
+                "subagent_id": {
+                    "type": "string",
+                    "description": "Specific subagent ID to check (optional)",
+                },
             },
             "required": [],
         },
@@ -185,7 +210,9 @@ def subagent_steer_tool(subagent_id: str, message: str) -> str:
         # In a real implementation, this would communicate with the running subagent
         # For now, just log the steer message
         if subagent_id in _active_subagents:
-            _active_subagents[subagent_id]["steer_messages"] = _active_subagents[subagent_id].get("steer_messages", [])
+            _active_subagents[subagent_id]["steer_messages"] = _active_subagents[subagent_id].get(
+                "steer_messages", []
+            )
             _active_subagents[subagent_id]["steer_messages"].append(message)
             return json.dumps({"success": True, "message": "Steer message queued"})
         else:

@@ -16,9 +16,18 @@ class TestToolRegistry:
         assert registry is not None
 
     def test_register_and_get(self):
-        schema = {"type": "function", "function": {"name": "test_tool", "description": "Test", "parameters": {"type": "object", "properties": {}}}}
+        schema = {
+            "type": "function",
+            "function": {
+                "name": "test_tool",
+                "description": "Test",
+                "parameters": {"type": "object", "properties": {}},
+            },
+        }
+
         def handler(args, **kwargs):
             return '{"result": "ok"}'
+
         def check_fn():
             return True
 
@@ -38,7 +47,7 @@ class TestModelTools:
             "test",
             "Test description",
             {"arg": {"type": "string", "description": "Test arg"}},
-            ["arg"]
+            ["arg"],
         )
         assert schema["type"] == "function"
         assert schema["function"]["name"] == "test"
@@ -85,7 +94,9 @@ class TestRuntimeProvider:
     def test_resolve_runtime_provider(self):
         from enaya.cli.runtime_provider import resolve_runtime_provider
 
-        runtime = resolve_runtime_provider(provider="openrouter", model="anthropic/claude-3.5-sonnet")
+        runtime = resolve_runtime_provider(
+            provider="openrouter", model="anthropic/claude-3.5-sonnet"
+        )
         assert runtime.provider == "openrouter"
         assert runtime.model == "anthropic/claude-3.5-sonnet"
         assert runtime.api_mode == "chat_completions"

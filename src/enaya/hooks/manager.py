@@ -7,11 +7,13 @@ Lifecycle hooks for gateway events, agent events, and custom triggers.
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -21,8 +23,10 @@ import yaml
 # Hook Types and Events
 # =============================================================================
 
+
 class HookEvent(Enum):
     """Gateway and agent lifecycle events."""
+
     # Gateway events
     GATEWAY_STARTUP = "gateway:startup"
     GATEWAY_SHUTDOWN = "gateway:shutdown"
@@ -57,6 +61,7 @@ class HookEvent(Enum):
 @dataclass
 class HookContext:
     """Context passed to hook handlers."""
+
     event: HookEvent
     timestamp: float = field(default_factory=time.time)
     profile: str = "default"
@@ -80,6 +85,7 @@ class HookContext:
 @dataclass
 class HookDefinition:
     """Hook definition from manifest."""
+
     name: str
     event: HookEvent
     handler: str  # function name or command
@@ -94,6 +100,7 @@ class HookDefinition:
 # =============================================================================
 # Hook Handlers
 # =============================================================================
+
 
 class HookHandler(ABC):
     """Abstract hook handler."""
@@ -126,14 +133,16 @@ class ShellHookHandler(HookHandler):
     async def execute(self, context: HookContext) -> Any:
         # Prepare environment
         env = os.environ.copy()
-        env.update({
-            "ENAYA_EVENT": context.event.value,
-            "ENAYA_PROFILE": context.profile,
-            "ENAYA_SESSION_ID": context.session_id or "",
-            "ENAYA_PLATFORM": context.platform or "",
-            "ENAYA_USER_ID": context.user_id or "",
-            "ENAYA_TIMESTAMP": str(context.timestamp),
-        })
+        env.update(
+            {
+                "ENAYA_EVENT": context.event.value,
+                "ENAYA_PROFILE": context.profile,
+                "ENAYA_SESSION_ID": context.session_id or "",
+                "ENAYA_PLATFORM": context.platform or "",
+                "ENAYA_USER_ID": context.user_id or "",
+                "ENAYA_TIMESTAMP": str(context.timestamp),
+            }
+        )
 
         # Add data as JSON
         env["ENAYA_DATA"] = json.dumps(context.data)
@@ -171,7 +180,6 @@ class PythonHookHandler(HookHandler):
         # Create a safe execution environment
         local_vars = {
             "context": context,
-            "json": json,
             "time": time,
             "os": os,
             "Path": Path,
@@ -179,10 +187,9 @@ class PythonHookHandler(HookHandler):
 
         try:
             # Execute with timeout
-            result = await asyncio.wait_for(
+            await asyncio.wait_for(
                 asyncio.get_event_loop().run_in_executor(
-                    None,
-                    lambda: exec(self.code, {"__builtins__": {}}, local_vars)
+                    None, lambda: exec(self.code, {"__builtins__": {}}, local_vars)
                 ),
                 timeout=self.timeout,
             )
@@ -225,6 +232,7 @@ class WebhookHookHandler(HookHandler):
 # Hook Manager
 # =============================================================================
 
+
 class HookManager:
     """Manages hook registration, execution, and lifecycle."""
 
@@ -244,27 +252,35 @@ class HookManager:
         self.register_handler(
             HookEvent.SESSION_START,
             FunctionHookHandler(self._log_session_start),
-            HookDefinition(name="log_session_start", event=HookEvent.SESSION_START, handler="log_session_start"),
+            HookDefinition(
+                name="log_session_start", event=HookEvent.SESSION_START, handler="log_session_start"
+            ),
         )
 
         self.register_handler(
             HookEvent.SESSION_END,
             FunctionHookHandler(self._log_session_end),
-            HookDefinition(name="log_session_end", event=HookEvent.SESSION_END, handler="log_session_end"),
+            HookDefinition(
+                name="log_session_end", event=HookEvent.SESSION_END, handler="log_session_end"
+            ),
         )
 
         # Agent step logging
         self.register_handler(
             HookEvent.AGENT_STEP,
             FunctionHookHandler(self._log_agent_step),
-            HookDefinition(name="log_agent_step", event=HookEvent.AGENT_STEP, handler="log_agent_step"),
+            HookDefinition(
+                name="log_agent_step", event=HookEvent.AGENT_STEP, handler="log_agent_step"
+            ),
         )
 
         # Error handling
         self.register_handler(
             HookEvent.AGENT_ERROR,
             FunctionHookHandler(self._handle_agent_error),
-            HookDefinition(name="handle_agent_error", event=HookEvent.AGENT_ERROR, handler="handle_agent_error"),
+            HookDefinition(
+                name="handle_agent_error", event=HookEvent.AGENT_ERROR, handler="handle_agent_error"
+            ),
         )
 
     def _matches_conditions(self, definition: HookDefinition, context: HookContext) -> bool:
@@ -296,8 +312,7 @@ class HookManager:
     def unregister_handler(self, event: HookEvent, handler_name: str) -> bool:
         if event in self._handlers:
             self._handlers[event] = [
-                (h, d) for h, d in self._handlers[event]
-                if d.name != handler_name
+                (h, d) for h, d in self._handlers[event] if d.name != handler_name
             ]
             return True
         return False
@@ -395,23 +410,27 @@ class HookManager:
 
         return loaded
 
-    def create_hook_file(self, name: str, event: HookEvent, handler_type: str = "shell", handler: str = "") -> Path:
+    def create_hook_file(
+        self, name: str, event: HookEvent, handler_type: str = "shell", handler: str = ""
+    ) -> Path:
         """Create a new hook definition file."""
         hooks_dir = self.hooks_dir / name
         hooks_dir.mkdir(parents=True, exist_ok=True)
 
         hook_data = {
-            "hooks": [{
-                "name": name,
-                "event": event.value,
-                "handler": handler,
-                "type": handler_type,
-                "priority": 0,
-                "async_mode": False,
-                "timeout": 30.0,
-                "conditions": {},
-                "config": {},
-            }]
+            "hooks": [
+                {
+                    "name": name,
+                    "event": event.value,
+                    "handler": handler,
+                    "type": handler_type,
+                    "priority": 0,
+                    "async_mode": False,
+                    "timeout": 30.0,
+                    "conditions": {},
+                    "config": {},
+                }
+            ]
         }
 
         hook_file = hooks_dir / "hooks.yaml"
@@ -421,7 +440,7 @@ class HookManager:
         # Create example handler
         if handler_type == "shell":
             script_file = hooks_dir / "hook.sh"
-            script_file.write_text(f'''#!/bin/bash
+            script_file.write_text(f"""#!/bin/bash
 # Hook: {name}
 # Event: {event.value}
 
@@ -430,7 +449,7 @@ echo "Profile: $ENAYA_PROFILE"
 echo "Session: $ENAYA_SESSION_ID"
 echo "Platform: $ENAYA_PLATFORM"
 echo "Data: $ENAYA_DATA"
-''')
+""")
             script_file.chmod(0o755)
         elif handler_type == "python":
             script_file = hooks_dir / "hook.py"
@@ -457,6 +476,7 @@ result = hook(context)
 # =============================================================================
 # Webhook Server (for receiving external webhooks)
 # =============================================================================
+
 
 class WebhookServer:
     """HTTP server for receiving external webhooks."""
@@ -507,6 +527,7 @@ class WebhookServer:
 
     async def start(self):
         import uvicorn
+
         if not self._app:
             self.create_app()
 
@@ -539,13 +560,15 @@ def hook_list() -> list[dict]:
     result = []
     for event, handlers in manager._handlers.items():
         for handler, definition in handlers:
-            result.append({
-                "event": event.value,
-                "name": definition.name,
-                "type": definition.type,
-                "priority": definition.priority,
-                "async": definition.async_mode,
-            })
+            result.append(
+                {
+                    "event": event.value,
+                    "name": definition.name,
+                    "type": definition.type,
+                    "priority": definition.priority,
+                    "async": definition.async_mode,
+                }
+            )
     return result
 
 

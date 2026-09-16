@@ -11,6 +11,7 @@ from dataclasses import dataclass
 @dataclass
 class ResearchSource:
     """A research source with metadata."""
+
     url: str
     title: str
     content: str

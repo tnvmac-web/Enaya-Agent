@@ -18,7 +18,10 @@ SYNTHESIZE_RESULTS_SCHEMA = {
     "type": "function",
     "function": {
         "name": "synthesize_results",
-        "description": "Synthesize multiple subagent results into a coherent answer. Handles deduplication, conflict resolution, and citation.",
+        "description": (
+            "Synthesize multiple subagent results into a coherent answer. "
+            "Handles deduplication, conflict resolution, and citation."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
@@ -36,7 +39,12 @@ SYNTHESIZE_RESULTS_SCHEMA = {
                     },
                 },
                 "query": {"type": "string", "description": "Original query or goal"},
-                "conflict_resolution": {"type": "string", "enum": ["latest", "consensus", "manual"], "description": "How to handle conflicting information", "default": "consensus"},
+                "conflict_resolution": {
+                    "type": "string",
+                    "enum": ["latest", "consensus", "manual"],
+                    "description": "How to handle conflicting information",
+                    "default": "consensus",
+                },
             },
             "required": ["results", "query"],
         },
@@ -48,26 +56,33 @@ def check_synthesize_results_requirements() -> bool:
     return True
 
 
-def synthesize_results_tool(results: list[dict], query: str, conflict_resolution: str = "consensus") -> str:
+def synthesize_results_tool(
+    results: list[dict], query: str, conflict_resolution: str = "consensus"
+) -> str:
     """Synthesize multiple results into a coherent answer."""
     # This is a template - the LLM would do the actual synthesis
-    return json.dumps({
-        "query": query,
-        "num_results": len(results),
-        "conflict_resolution": conflict_resolution,
-        "synthesis_template": {
-            "summary": "Executive summary of findings",
-            "key_findings": [
-                {"finding": "Finding 1", "supporting_sources": [], "confidence": "high"},
-            ],
-            "conflicts": [
-                {"topic": "Topic", "positions": [], "resolution": ""},
-            ],
-            "gaps": ["Gap 1", "Gap 2"],
-            "recommendations": ["Rec 1", "Rec 2"],
-        },
-        "instruction": "Fill in the synthesis_template with actual synthesized content. Cite sources using subagent_id.",
-    })
+    return json.dumps(
+        {
+            "query": query,
+            "num_results": len(results),
+            "conflict_resolution": conflict_resolution,
+            "synthesis_template": {
+                "summary": "Executive summary of findings",
+                "key_findings": [
+                    {"finding": "Finding 1", "supporting_sources": [], "confidence": "high"},
+                ],
+                "conflicts": [
+                    {"topic": "Topic", "positions": [], "resolution": ""},
+                ],
+                "gaps": ["Gap 1", "Gap 2"],
+                "recommendations": ["Rec 1", "Rec 2"],
+            },
+            "instruction": (
+                "Fill in the synthesis_template with actual synthesized content. "
+                "Cite sources using subagent_id."
+            ),
+        }
+    )
 
 
 registry.register(
@@ -87,7 +102,9 @@ COMPARE_SOURCES_SCHEMA = {
     "type": "function",
     "function": {
         "name": "compare_sources",
-        "description": "Compare multiple sources on the same topic. Returns structured comparison table.",
+        "description": (
+            "Compare multiple sources on the same topic. Returns structured comparison table."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
@@ -104,7 +121,11 @@ COMPARE_SOURCES_SCHEMA = {
                     },
                 },
                 "topic": {"type": "string", "description": "Topic to compare"},
-                "dimensions": {"type": "array", "items": {"type": "string"}, "description": "Comparison dimensions"},
+                "dimensions": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Comparison dimensions",
+                },
             },
             "required": ["sources", "topic"],
         },
@@ -121,19 +142,19 @@ def compare_sources_tool(sources: list[dict], topic: str, dimensions: list[str] 
     default_dimensions = ["accuracy", "completeness", "bias", "recency", "authority"]
     dimensions = dimensions or default_dimensions
 
-    return json.dumps({
-        "topic": topic,
-        "sources_compared": len(sources),
-        "dimensions": dimensions,
-        "comparison_template": {
-            "table": [
-                {"dimension": d, "source_scores": {}} for d in dimensions
-            ],
-            "winner": "",
-            "notes": "",
-        },
-        "instruction": "Fill in the comparison_template with actual scores and analysis.",
-    })
+    return json.dumps(
+        {
+            "topic": topic,
+            "sources_compared": len(sources),
+            "dimensions": dimensions,
+            "comparison_template": {
+                "table": [{"dimension": d, "source_scores": {}} for d in dimensions],
+                "winner": "",
+                "notes": "",
+            },
+            "instruction": "Fill in the comparison_template with actual scores and analysis.",
+        }
+    )
 
 
 registry.register(
@@ -159,7 +180,11 @@ EXTRACT_CLAIMS_SCHEMA = {
             "properties": {
                 "text": {"type": "string", "description": "Text to extract claims from"},
                 "source": {"type": "string", "description": "Source identifier"},
-                "min_confidence": {"type": "number", "description": "Minimum confidence threshold (0-1)", "default": 0.5},
+                "min_confidence": {
+                    "type": "number",
+                    "description": "Minimum confidence threshold (0-1)",
+                    "default": 0.5,
+                },
             },
             "required": ["text", "source"],
         },
@@ -174,20 +199,24 @@ def check_extract_claims_requirements() -> bool:
 def extract_claims_tool(text: str, source: str, min_confidence: float = 0.5) -> str:
     """Extract claims from text."""
     # Template for LLM to fill
-    return json.dumps({
-        "source": source,
-        "text_length": len(text),
-        "min_confidence": min_confidence,
-        "claims_template": [
-            {
-                "claim": "Extracted claim",
-                "evidence": "Supporting text from source",
-                "confidence": 0.8,
-                "claim_type": "factual|opinion|prediction|speculation",
-            }
-        ],
-        "instruction": "Extract all verifiable claims from the text. Return filled claims_template.",
-    })
+    return json.dumps(
+        {
+            "source": source,
+            "text_length": len(text),
+            "min_confidence": min_confidence,
+            "claims_template": [
+                {
+                    "claim": "Extracted claim",
+                    "evidence": "Supporting text from source",
+                    "confidence": 0.8,
+                    "claim_type": "factual|opinion|prediction|speculation",
+                }
+            ],
+            "instruction": (
+                "Extract all verifiable claims from the text. Return filled claims_template."
+            ),
+        }
+    )
 
 
 registry.register(

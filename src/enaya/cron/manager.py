@@ -23,6 +23,7 @@ from enaya.run_agent import create_agent
 # Cron Data Classes
 # =============================================================================
 
+
 class CronScheduleType(Enum):
     CRON = "cron"
     INTERVAL = "interval"
@@ -32,6 +33,7 @@ class CronScheduleType(Enum):
 @dataclass
 class CronJob:
     """Cron job definition."""
+
     id: str
     name: str
     schedule: str  # cron expression, interval in seconds, or ISO timestamp
@@ -58,6 +60,7 @@ class CronJob:
 @dataclass
 class CronJobResult:
     """Result of a cron job execution."""
+
     job_id: str
     success: bool
     result: str | None = None
@@ -70,6 +73,7 @@ class CronJobResult:
 # =============================================================================
 # Cron Manager
 # =============================================================================
+
 
 class CronManager:
     """Manages cron jobs with scheduling and execution."""
@@ -167,6 +171,7 @@ class CronManager:
     ) -> str:
         """Add a new cron job."""
         import uuid
+
         job_id = str(uuid.uuid4())[:12]
 
         job = CronJob(
@@ -261,10 +266,7 @@ class CronManager:
                         self._running_jobs[job.id] = task
 
                 # Clean up completed tasks
-                completed = [
-                    job_id for job_id, task in self._running_jobs.items()
-                    if task.done()
-                ]
+                completed = [job_id for job_id, task in self._running_jobs.items() if task.done()]
                 for job_id in completed:
                     del self._running_jobs[job_id]
 
@@ -280,7 +282,8 @@ class CronManager:
         try:
             # Create agent for this job
             agent = create_agent(
-                model=job.model or self.config.get("model", "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free"),
+                model=job.model
+                or self.config.get("model", "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free"),
                 provider=job.provider or self.config.get("provider"),
                 max_turns=job.max_turns,
                 profile=self.profile,
@@ -351,7 +354,6 @@ class CronManager:
             return
 
         platform = job.deliver.get("platform")
-        chat_type = job.deliver.get("chat_type", "private")
         chat_id = job.deliver.get("chat_id")
 
         if platform and chat_id:

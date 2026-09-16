@@ -27,12 +27,18 @@ VOICE_SCHEMA = {
                 "action": {
                     "type": "string",
                     "enum": ["tts", "stt", "list_voices"],
-                    "description": "Action to perform"
+                    "description": "Action to perform",
                 },
                 "text": {"type": "string", "description": "Text to convert to speech (for tts)"},
-                "audio_base64": {"type": "string", "description": "Base64 encoded audio data (for stt)"},
+                "audio_base64": {
+                    "type": "string",
+                    "description": "Base64 encoded audio data (for stt)",
+                },
                 "voice": {"type": "string", "description": "Voice to use (for tts)"},
-                "provider": {"type": "string", "description": "Provider to use (openai, elevenlabs, local)"},
+                "provider": {
+                    "type": "string",
+                    "description": "Provider to use (openai, elevenlabs, local)",
+                },
             },
             "required": ["action"],
         },
@@ -54,9 +60,10 @@ def _get_voice_manager():
     return _voice_manager
 
 
-def voice_tool(action: str, text: str = None, audio_base64: str = None, voice: str = None, provider: str = None) -> str:
+def voice_tool(
+    action: str, text: str = None, audio_base64: str = None, voice: str = None, provider: str = None
+) -> str:
     """Voice tool handler."""
-    manager = _get_voice_manager()
 
     try:
         if action == "tts":
@@ -68,14 +75,17 @@ def voice_tool(action: str, text: str = None, audio_base64: str = None, voice: s
 
             # Run async in sync context
             import asyncio
+
             audio_bytes = asyncio.run(vm.voice.synthesize(text, voice or "alloy"))
 
             b64_audio = base64.b64encode(audio_bytes).decode()
-            return json.dumps({
-                "success": True,
-                "audio_base64": b64_audio,
-                "format": "mp3",
-            })
+            return json.dumps(
+                {
+                    "success": True,
+                    "audio_base64": b64_audio,
+                    "format": "mp3",
+                }
+            )
 
         elif action == "stt":
             if not audio_base64:
@@ -88,35 +98,36 @@ def voice_tool(action: str, text: str = None, audio_base64: str = None, voice: s
             vm.auto_configure()
 
             import asyncio
+
             text = asyncio.run(vm.voice.transcribe(audio_bytes))
 
-            return json.dumps({
-                "success": True,
-                "text": text,
-            })
+            return json.dumps(
+                {
+                    "success": True,
+                    "text": text,
+                }
+            )
 
         elif action == "list_voices":
             vm = _get_voice_manager()
-            return json.dumps({
-                "voices": [
-                    {"id": "alloy", "name": "Alloy", "provider": "openai"},
-                    {"id": "echo", "name": "Echo", "provider": "openai"},
-                    {"id": "fable", "name": "Fable", "provider": "openai"},
-                    {"id": "onyx", "name": "Onyx", "provider": "openai"},
-                    {"id": "nova", "name": "Nova", "provider": "openai"},
-                    {"id": "shimmer", "name": "Shimmer", "provider": "openai"},
-                ]
-            })
+            return json.dumps(
+                {
+                    "voices": [
+                        {"id": "alloy", "name": "Alloy", "provider": "openai"},
+                        {"id": "echo", "name": "Echo", "provider": "openai"},
+                        {"id": "fable", "name": "Fable", "provider": "openai"},
+                        {"id": "onyx", "name": "Onyx", "provider": "openai"},
+                        {"id": "nova", "name": "Nova", "provider": "openai"},
+                        {"id": "shimmer", "name": "Shimmer", "provider": "openai"},
+                    ]
+                }
+            )
 
         else:
             return json.dumps({"error": f"Unknown action: {action}"})
 
     except Exception as e:
         return json.dumps({"error": str(e)})
-
-
-def check_voice_requirements() -> bool:
-    return True
 
 
 registry.register(

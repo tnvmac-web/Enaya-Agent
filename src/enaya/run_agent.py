@@ -29,9 +29,11 @@ if TYPE_CHECKING:
 # Configuration Dataclasses
 # =============================================================================
 
+
 @dataclass
 class AgentConfig:
     """Configuration for AIAgent instance."""
+
     model: str = "openrouter:anthropic/claude-sonnet-4"
     provider: str | None = None
     base_url: str | None = None
@@ -72,6 +74,7 @@ StatusCallback = Callable[[str], None]  # status_message
 # =============================================================================
 # AIAgent - Main Facade
 # =============================================================================
+
 
 class AIAgent:
     """
@@ -158,13 +161,16 @@ class AIAgent:
         Used by CLI, gateway, cron, ACP.
         """
         from enaya.agent.conversation_loop import run_conversation
+
         if session_id:
             self.session_id = session_id
 
         if resume:
             self._load_session()
 
-        return run_conversation(self, user_input, prefill=prefill, ephemeral_system_prompt=ephemeral_system_prompt)
+        return run_conversation(
+            self, user_input, prefill=prefill, ephemeral_system_prompt=ephemeral_system_prompt
+        )
 
     def run_single_turn(
         self,
@@ -269,6 +275,7 @@ class AIAgent:
         if self._client is None:
             if self.api_mode in ("chat_completions", "codex_responses"):
                 from openai import OpenAI
+
                 self._client = OpenAI(
                     api_key=self.api_key,
                     base_url=self.base_url,
@@ -276,6 +283,7 @@ class AIAgent:
                 )
             elif self.api_mode == "anthropic_messages":
                 import anthropic
+
                 self._client = anthropic.Anthropic(
                     api_key=self.api_key,
                     base_url=self.base_url,
@@ -326,20 +334,26 @@ class AIAgent:
             elif msg["role"] == "assistant":
                 if msg.get("tool_calls"):
                     for tc in msg["tool_calls"]:
-                        input_items.append({
-                            "type": "function_call",
-                            "call_id": tc["id"],
-                            "name": tc["function"]["name"],
-                            "arguments": tc["function"]["arguments"],
-                        })
+                        input_items.append(
+                            {
+                                "type": "function_call",
+                                "call_id": tc["id"],
+                                "name": tc["function"]["name"],
+                                "arguments": tc["function"]["arguments"],
+                            }
+                        )
                 else:
-                    input_items.append({"type": "message", "role": "assistant", "content": msg["content"]})
+                    input_items.append(
+                        {"type": "message", "role": "assistant", "content": msg["content"]}
+                    )
             elif msg["role"] == "tool":
-                input_items.append({
-                    "type": "function_call_output",
-                    "call_id": msg["tool_call_id"],
-                    "output": msg["content"],
-                })
+                input_items.append(
+                    {
+                        "type": "function_call_output",
+                        "call_id": msg["tool_call_id"],
+                        "output": msg["content"],
+                    }
+                )
         return input_items
 
     def _parse_chat_completions_response(self, response) -> dict:
@@ -385,14 +399,18 @@ class AIAgent:
                     if content.type == "output_text":
                         result["content"] += content.text
             elif item.type == "function_call":
-                result["tool_calls"].append({
-                    "id": item.call_id,
-                    "type": "function",
-                    "function": {
-                        "name": item.name,
-                        "arguments": json.dumps(item.arguments) if isinstance(item.arguments, dict) else item.arguments,
-                    },
-                })
+                result["tool_calls"].append(
+                    {
+                        "id": item.call_id,
+                        "type": "function",
+                        "function": {
+                            "name": item.name,
+                            "arguments": json.dumps(item.arguments)
+                            if isinstance(item.arguments, dict)
+                            else item.arguments,
+                        },
+                    }
+                )
         if hasattr(response, "usage") and response.usage:
             result["usage"] = {
                 "prompt_tokens": response.usage.input_tokens,
@@ -420,7 +438,11 @@ class AIAgent:
                 for tc in delta.tool_calls:
                     idx = tc.index
                     if idx not in tool_calls:
-                        tool_calls[idx] = {"id": "", "type": "function", "function": {"name": "", "arguments": ""}}
+                        tool_calls[idx] = {
+                            "id": "",
+                            "type": "function",
+                            "function": {"name": "", "arguments": ""},
+                        }
                     if tc.id:
                         tool_calls[idx]["id"] = tc.id
                     if tc.function.name:
@@ -511,6 +533,7 @@ class AIAgent:
 # High-Level Convenience Functions
 # =============================================================================
 
+
 def create_agent(
     model: str = "openrouter:anthropic/claude-sonnet-4",
     provider: str | None = None,
@@ -535,6 +558,7 @@ async def run_agent_async(
 # Batch/Headless Execution
 # =============================================================================
 
+
 class BatchRunner:
     """Run multiple prompts in batch/headless mode."""
 
@@ -555,6 +579,7 @@ class BatchRunner:
 if __name__ == "__main__":
     # Smoke test
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-q", "--query", default="Hello, Enaya!")
     args = parser.parse_args()

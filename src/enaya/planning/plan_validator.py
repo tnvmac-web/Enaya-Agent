@@ -11,6 +11,7 @@ from dataclasses import dataclass
 @dataclass
 class ValidationResult:
     """Result of plan validation."""
+
     passed: bool
     issues: list[str]
     warnings: list[str]
@@ -76,7 +77,7 @@ class PlanValidator:
             issues.append("No goal specified")
         for i, phase in enumerate(plan.get("phases", [])):
             if not phase.get("tasks"):
-                issues.append(f"Phase {i+1} has no tasks")
+                issues.append(f"Phase {i + 1} has no tasks")
         return issues
 
     def _check_feasibility(self, plan: dict) -> list[str]:
@@ -96,7 +97,9 @@ class PlanValidator:
                     issues.append(f"Duplicate task ID: {tid}")
                 task_ids.add(tid)
                 for dep in task.get("dependencies", []):
-                    if dep not in task_ids and dep not in [t.get("task_id") for p in plan.get("phases", []) for t in p.get("tasks", [])]:
+                    if dep not in task_ids and dep not in [
+                        t.get("task_id") for p in plan.get("phases", []) for t in p.get("tasks", [])
+                    ]:
                         issues.append(f"Task {tid} depends on unknown task: {dep}")
         return issues
 

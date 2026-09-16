@@ -28,6 +28,7 @@ from enaya.run_agent import AIAgent, create_agent
 
 class ChatMessage(Message):
     """Message for chat updates."""
+
     def __init__(self, role: str, content: str, streaming: bool = False):
         self.role = role
         self.content = content
@@ -42,64 +43,52 @@ class EnayaTUI(App):
     Screen {
         layout: vertical;
     }
-    
     #main-container {
         layout: horizontal;
         height: 1fr;
     }
-    
     #sidebar {
         width: 30;
         border-right: solid $primary;
         padding: 1;
     }
-    
     #chat-area {
         width: 1fr;
         layout: vertical;
     }
-    
     #chat-log {
         height: 1fr;
         border: solid $primary;
         padding: 1;
         overflow-y: auto;
     }
-    
     #input-area {
         height: auto;
         min-height: 5;
         border: solid $primary;
         padding: 1;
     }
-    
     #input-field {
         width: 1fr;
     }
-    
     #session-list {
         height: 1fr;
     }
-    
     .user-message {
         color: $accent;
         margin-bottom: 1;
     }
-    
     .assistant-message {
         color: $text;
         margin-bottom: 1;
     }
-    
     .system-message {
         color: $warning;
         margin-bottom: 1;
     }
-    
     .streaming {
         opacity: 0.8;
     }
-    
     #status-bar {
         height: 1;
         background: $surface;
@@ -133,7 +122,9 @@ class EnayaTUI(App):
             with Vertical(id="chat-area"):
                 yield RichLog(id="chat-log", markup=True, highlight=True, wrap=True)
                 with Container(id="input-area"):
-                    yield Input(placeholder="Type your message... (Ctrl+Enter to send)", id="input-field")
+                    yield Input(
+                        placeholder="Type your message... (Ctrl+Enter to send)", id="input-field"
+                    )
         yield Footer()
         yield Static("", id="status-bar")
 
@@ -190,10 +181,7 @@ class EnayaTUI(App):
         try:
             # Run in thread pool to avoid blocking UI
             loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None,
-                lambda: self.agent.run_conversation(content)
-            )
+            result = await loop.run_in_executor(None, lambda: self.agent.run_conversation(content))
 
             # Update UI with result
             self.call_from_thread(self._on_agent_result, result)

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 @dataclass
 class SemanticEntry:
     """An entry in the semantic store."""
+
     id: str
     content: str
     embedding: list[float] = None
@@ -39,6 +40,7 @@ class SemanticStore:
             if persist_dir is None:
                 import os
                 from pathlib import Path
+
                 enaya_home = Path(os.environ.get("ENAYA_HOME", Path.home() / ".enaya"))
                 if self.profile != "default":
                     enaya_home = enaya_home / "profiles" / self.profile
@@ -78,6 +80,7 @@ class SemanticStore:
             return "chromadb_not_available"
 
         import uuid
+
         entry_id = entry_id or str(uuid.uuid4())[:12]
 
         coll = self._get_collection(collection)
@@ -114,12 +117,14 @@ class SemanticStore:
         formatted = []
         if results["documents"]:
             for i, doc in enumerate(results["documents"][0]):
-                formatted.append({
-                    "id": results["ids"][0][i],
-                    "content": doc,
-                    "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
-                    "distance": results["distances"][0][i] if results["distances"] else None,
-                })
+                formatted.append(
+                    {
+                        "id": results["ids"][0][i],
+                        "content": doc,
+                        "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
+                        "distance": results["distances"][0][i] if results["distances"] else None,
+                    }
+                )
         return formatted
 
     def delete(self, entry_id: str, collection: str = "semantic") -> bool:
@@ -132,7 +137,7 @@ class SemanticStore:
             try:
                 coll.delete(ids=[entry_id])
                 return True
-            except:
+            except Exception:
                 return False
         return False
 
@@ -145,6 +150,6 @@ class SemanticStore:
         for name, coll in self.collections.items():
             try:
                 stats[name] = {"count": coll.count()}
-            except:
+            except Exception:
                 stats[name] = {"count": 0}
         return stats

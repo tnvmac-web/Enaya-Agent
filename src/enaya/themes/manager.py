@@ -6,6 +6,7 @@ Customizable themes with live reload across all surfaces.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -15,9 +16,11 @@ import yaml
 # Theme Data Classes
 # =============================================================================
 
+
 @dataclass
 class ThemePalette:
     """Color palette for a theme."""
+
     # Base colors
     background: str = "#0d1117"
     surface: str = "#161b22"
@@ -54,6 +57,7 @@ class ThemePalette:
 @dataclass
 class ThemeTypography:
     """Typography settings."""
+
     font_family: str = "JetBrains Mono, Fira Code, Consolas, monospace"
     font_size: int = 14
     line_height: float = 1.6
@@ -64,6 +68,7 @@ class ThemeTypography:
 @dataclass
 class ThemeSpacing:
     """Spacing scale."""
+
     xs: int = 4
     sm: int = 8
     md: int = 16
@@ -75,6 +80,7 @@ class ThemeSpacing:
 @dataclass
 class Theme:
     """Complete theme definition."""
+
     name: str
     display_name: str
     description: str = ""
@@ -103,7 +109,6 @@ BUILTIN_THEMES = {
         description="Clean dark theme with teal accents",
         author="Enaya Team",
     ),
-
     "light": Theme(
         name="light",
         display_name="Enaya Light",
@@ -130,7 +135,6 @@ BUILTIN_THEMES = {
             selection="#006b5b44",
         ),
     ),
-
     "synthwave": Theme(
         name="synthwave",
         display_name="Synthwave",
@@ -160,7 +164,6 @@ BUILTIN_THEMES = {
             font_family="'Orbitron', 'JetBrains Mono', monospace",
         ),
     ),
-
     "dracula": Theme(
         name="dracula",
         display_name="Dracula",
@@ -187,7 +190,6 @@ BUILTIN_THEMES = {
             selection="#bd93f944",
         ),
     ),
-
     "nord": Theme(
         name="nord",
         display_name="Nord",
@@ -214,7 +216,6 @@ BUILTIN_THEMES = {
             selection="#88c0d044",
         ),
     ),
-
     "github": Theme(
         name="github",
         display_name="GitHub Dark",
@@ -247,6 +248,7 @@ BUILTIN_THEMES = {
 # =============================================================================
 # Theme Manager
 # =============================================================================
+
 
 class ThemeManager:
     """Manages themes with live reload across surfaces."""
@@ -331,6 +333,7 @@ class ThemeManager:
 
         # Deep copy
         import copy
+
         new_theme = copy.deepcopy(base)
         new_theme.name = name
         new_theme.display_name = name.title()
@@ -440,6 +443,7 @@ class ThemeManager:
 # Skin CLI Commands
 # =============================================================================
 
+
 def skin_list() -> None:
     """List available themes."""
     manager = ThemeManager()
@@ -481,7 +485,7 @@ def skin_set(key: str, value: str) -> bool:
 def skin_create(name: str, base: str = "default") -> None:
     """Create a new custom theme."""
     manager = ThemeManager()
-    theme = manager.create_custom_theme(name, base)
+    manager.create_custom_theme(name, base)
     print(f"Created theme: {name} (based on {base})")
     print(f"Edit {manager.themes_dir / f'{name}.yaml'} to customize")
 

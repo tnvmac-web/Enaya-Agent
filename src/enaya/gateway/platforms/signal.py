@@ -20,9 +20,11 @@ class SignalAdapter:
     def __init__(self, runner: GatewayRunner):
         self.runner = runner
         self.phone_number = os.environ.get("SIGNAL_PHONE_NUMBER")
-        self.allowed_users = set(
-            os.environ.get("SIGNAL_ALLOWED_USERS", "").split(",")
-        ) if os.environ.get("SIGNAL_ALLOWED_USERS") else set()
+        self.allowed_users = (
+            set(os.environ.get("SIGNAL_ALLOWED_USERS", "").split(","))
+            if os.environ.get("SIGNAL_ALLOWED_USERS")
+            else set()
+        )
         self.allow_all = os.environ.get("SIGNAL_ALLOW_ALL_USERS", "false").lower() == "true"
 
         self._process = None
@@ -48,7 +50,8 @@ class SignalAdapter:
         self._process = subprocess.Popen(
             [
                 "signal-cli",
-                "-u", self.phone_number,
+                "-u",
+                self.phone_number,
                 "daemon",
                 "--json",
             ],
@@ -144,9 +147,11 @@ class SignalAdapter:
         try:
             cmd = [
                 "signal-cli",
-                "-u", self.phone_number,
+                "-u",
+                self.phone_number,
                 "send",
-                "-m", text,
+                "-m",
+                text,
                 to_number,
             ]
 

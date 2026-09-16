@@ -19,9 +19,11 @@ import httpx
 # MCP Data Classes
 # =============================================================================
 
+
 @dataclass
 class MCPServerConfig:
     """MCP server configuration."""
+
     name: str
     transport: str = "stdio"  # stdio, sse, websocket
     command: list[str] = field(default_factory=list)
@@ -35,6 +37,7 @@ class MCPServerConfig:
 @dataclass
 class MCPTool:
     """MCP tool definition."""
+
     name: str
     description: str
     input_schema: dict
@@ -44,6 +47,7 @@ class MCPTool:
 @dataclass
 class MCPResource:
     """MCP resource definition."""
+
     uri: str
     name: str
     description: str
@@ -54,6 +58,7 @@ class MCPResource:
 @dataclass
 class MCPPrompt:
     """MCP prompt template."""
+
     name: str
     description: str
     arguments: list[dict]
@@ -63,6 +68,7 @@ class MCPPrompt:
 # =============================================================================
 # MCP Client Base
 # =============================================================================
+
 
 class MCPClient(ABC):
     """Abstract MCP client."""
@@ -119,6 +125,7 @@ class MCPClient(ABC):
 # STDIO Transport Client
 # =============================================================================
 
+
 class StdioMCPClient(MCPClient):
     """MCP client using stdio transport."""
 
@@ -146,11 +153,14 @@ class StdioMCPClient(MCPClient):
         asyncio.create_task(self._read_stdout())
 
         # Initialize
-        await self._send_request("initialize", {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": {"name": "enaya-agent", "version": "0.1.0"},
-        })
+        await self._send_request(
+            "initialize",
+            {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "enaya-agent", "version": "0.1.0"},
+            },
+        )
 
         self._connected = True
 
@@ -223,33 +233,40 @@ class StdioMCPClient(MCPClient):
         result = await self._send_request("tools/list", {})
         tools = []
         for t in result.get("tools", []):
-            tools.append(MCPTool(
-                name=t["name"],
-                description=t["description"],
-                input_schema=t["inputSchema"],
-                server_name=self.config.name,
-            ))
+            tools.append(
+                MCPTool(
+                    name=t["name"],
+                    description=t["description"],
+                    input_schema=t["inputSchema"],
+                    server_name=self.config.name,
+                )
+            )
         self._tools = tools
         return tools
 
     async def call_tool(self, name: str, arguments: dict) -> Any:
-        result = await self._send_request("tools/call", {
-            "name": name,
-            "arguments": arguments,
-        })
+        result = await self._send_request(
+            "tools/call",
+            {
+                "name": name,
+                "arguments": arguments,
+            },
+        )
         return result.get("content", [])
 
     async def list_resources(self) -> list[MCPResource]:
         result = await self._send_request("resources/list", {})
         resources = []
         for r in result.get("resources", []):
-            resources.append(MCPResource(
-                uri=r["uri"],
-                name=r["name"],
-                description=r.get("description", ""),
-                mime_type=r.get("mimeType", "text/plain"),
-                server_name=self.config.name,
-            ))
+            resources.append(
+                MCPResource(
+                    uri=r["uri"],
+                    name=r["name"],
+                    description=r.get("description", ""),
+                    mime_type=r.get("mimeType", "text/plain"),
+                    server_name=self.config.name,
+                )
+            )
         self._resources = resources
         return resources
 
@@ -264,20 +281,25 @@ class StdioMCPClient(MCPClient):
         result = await self._send_request("prompts/list", {})
         prompts = []
         for p in result.get("prompts", []):
-            prompts.append(MCPPrompt(
-                name=p["name"],
-                description=p["description"],
-                arguments=p.get("arguments", []),
-                server_name=self.config.name,
-            ))
+            prompts.append(
+                MCPPrompt(
+                    name=p["name"],
+                    description=p["description"],
+                    arguments=p.get("arguments", []),
+                    server_name=self.config.name,
+                )
+            )
         self._prompts = prompts
         return prompts
 
     async def get_prompt(self, name: str, arguments: dict) -> str:
-        result = await self._send_request("prompts/get", {
-            "name": name,
-            "arguments": arguments,
-        })
+        result = await self._send_request(
+            "prompts/get",
+            {
+                "name": name,
+                "arguments": arguments,
+            },
+        )
         messages = result.get("messages", [])
         return "\n".join(m.get("content", {}).get("text", "") for m in messages)
 
@@ -285,6 +307,7 @@ class StdioMCPClient(MCPClient):
 # =============================================================================
 # SSE Transport Client
 # =============================================================================
+
 
 class SSEClient(MCPClient):
     """MCP client using SSE transport."""
@@ -304,11 +327,14 @@ class SSEClient(MCPClient):
         )
 
         # Initialize
-        await self._send_request("initialize", {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": {"name": "enaya-agent", "version": "0.1.0"},
-        })
+        await self._send_request(
+            "initialize",
+            {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "enaya-agent", "version": "0.1.0"},
+            },
+        )
 
         self._connected = True
 
@@ -348,7 +374,15 @@ class SSEClient(MCPClient):
 
     async def list_tools(self) -> list[MCPTool]:
         result = await self._send_request("tools/list", {})
-        return [MCPTool(name=t["name"], description=t["description"], input_schema=t["inputSchema"], server_name=self.config.name) for t in result.get("tools", [])]
+        return [
+            MCPTool(
+                name=t["name"],
+                description=t["description"],
+                input_schema=t["inputSchema"],
+                server_name=self.config.name,
+            )
+            for t in result.get("tools", [])
+        ]
 
     async def call_tool(self, name: str, arguments: dict) -> Any:
         result = await self._send_request("tools/call", {"name": name, "arguments": arguments})
@@ -356,7 +390,16 @@ class SSEClient(MCPClient):
 
     async def list_resources(self) -> list[MCPResource]:
         result = await self._send_request("resources/list", {})
-        return [MCPResource(uri=r["uri"], name=r["name"], description=r.get("description", ""), mime_type=r.get("mimeType", "text/plain"), server_name=self.config.name) for r in result.get("resources", [])]
+        return [
+            MCPResource(
+                uri=r["uri"],
+                name=r["name"],
+                description=r.get("description", ""),
+                mime_type=r.get("mimeType", "text/plain"),
+                server_name=self.config.name,
+            )
+            for r in result.get("resources", [])
+        ]
 
     async def read_resource(self, uri: str) -> str:
         result = await self._send_request("resources/read", {"uri": uri})
@@ -364,7 +407,15 @@ class SSEClient(MCPClient):
 
     async def list_prompts(self) -> list[MCPPrompt]:
         result = await self._send_request("prompts/list", {})
-        return [MCPPrompt(name=p["name"], description=p["description"], arguments=p.get("arguments", []), server_name=self.config.name) for p in result.get("prompts", [])]
+        return [
+            MCPPrompt(
+                name=p["name"],
+                description=p["description"],
+                arguments=p.get("arguments", []),
+                server_name=self.config.name,
+            )
+            for p in result.get("prompts", [])
+        ]
 
     async def get_prompt(self, name: str, arguments: dict) -> str:
         result = await self._send_request("prompts/get", {"name": name, "arguments": arguments})
@@ -374,6 +425,7 @@ class SSEClient(MCPClient):
 # =============================================================================
 # MCP Manager
 # =============================================================================
+
 
 class MCPManager:
     """Manages multiple MCP server connections."""
@@ -470,13 +522,30 @@ MCP_TOOL_SCHEMA = {
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["add_server", "connect", "disconnect", "list_servers", "list_tools", "call_tool", "list_resources", "read_resource"],
+                    "enum": [
+                        "add_server",
+                        "connect",
+                        "disconnect",
+                        "list_servers",
+                        "list_tools",
+                        "call_tool",
+                        "list_resources",
+                        "read_resource",
+                    ],
                     "description": "Action to perform",
                 },
                 "server_name": {"type": "string", "description": "Server name"},
                 "transport": {"type": "string", "enum": ["stdio", "sse"], "default": "stdio"},
-                "command": {"type": "array", "items": {"type": "string"}, "description": "Command for stdio transport"},
-                "args": {"type": "array", "items": {"type": "string"}, "description": "Command arguments"},
+                "command": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Command for stdio transport",
+                },
+                "args": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Command arguments",
+                },
                 "url": {"type": "string", "description": "URL for SSE transport"},
                 "tool_name": {"type": "string", "description": "Tool to call"},
                 "arguments": {"type": "object", "description": "Tool arguments"},
@@ -512,32 +581,45 @@ async def mcp_tool(action: str, **kwargs) -> str:
 
         elif action == "disconnect":
             await manager.disconnect(kwargs["server_name"])
-            return json.dumps({"success": True, "message": f"Disconnected from {kwargs['server_name']}"})
+            return json.dumps(
+                {"success": True, "message": f"Disconnected from {kwargs['server_name']}"}
+            )
 
         elif action == "list_servers":
             return json.dumps({"servers": manager.list_servers()})
 
         elif action == "list_tools":
             tools = await manager.list_all_tools()
-            return json.dumps({
-                "tools": [
-                    {"name": t.name, "description": t.description, "server": t.server_name}
-                    for t in tools
-                ]
-            })
+            return json.dumps(
+                {
+                    "tools": [
+                        {"name": t.name, "description": t.description, "server": t.server_name}
+                        for t in tools
+                    ]
+                }
+            )
 
         elif action == "call_tool":
-            result = await manager.call_tool(kwargs["server_name"], kwargs["tool_name"], kwargs.get("arguments", {}))
+            result = await manager.call_tool(
+                kwargs["server_name"], kwargs["tool_name"], kwargs.get("arguments", {})
+            )
             return json.dumps({"result": result})
 
         elif action == "list_resources":
             resources = await manager.list_all_resources()
-            return json.dumps({
-                "resources": [
-                    {"uri": r.uri, "name": r.name, "description": r.description, "server": r.server_name}
-                    for r in resources
-                ]
-            })
+            return json.dumps(
+                {
+                    "resources": [
+                        {
+                            "uri": r.uri,
+                            "name": r.name,
+                            "description": r.description,
+                            "server": r.server_name,
+                        }
+                        for r in resources
+                    ]
+                }
+            )
 
         elif action == "read_resource":
             client = manager.servers.get(kwargs["server_name"])

@@ -14,51 +14,146 @@ from typing import Any
 
 _PROVIDER_MODELS: dict[str, dict[str, dict[str, Any]]] = {
     "openrouter": {
-        "anthropic/claude-3.5-sonnet": {"context_window": 200000, "supports_tools": True, "supports_vision": True},
-        "anthropic/claude-3.5-haiku": {"context_window": 200000, "supports_tools": True, "supports_vision": True},
-        "anthropic/claude-3-opus": {"context_window": 200000, "supports_tools": True, "supports_vision": True},
-        "google/gemini-1.5-pro": {"context_window": 2000000, "supports_tools": True, "supports_vision": True},
-        "google/gemini-1.5-flash": {"context_window": 1000000, "supports_tools": True, "supports_vision": True},
-        "openai/gpt-4o": {"context_window": 128000, "supports_tools": True, "supports_vision": True},
-        "openai/gpt-4o-mini": {"context_window": 128000, "supports_tools": True, "supports_vision": True},
-        "openai/gpt-4-turbo": {"context_window": 128000, "supports_tools": True, "supports_vision": True},
-        "meta-llama/llama-3.1-405b-instruct": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
-        "meta-llama/llama-3.1-70b-instruct": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
-        "mistralai/mistral-large": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
-        "nvidia/nemotron-3-ultra": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
-        "nvidia/nemotron-3-ultra-550b-a55b:free": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
+        "anthropic/claude-3.5-sonnet": {
+            "context_window": 200000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "anthropic/claude-3.5-haiku": {
+            "context_window": 200000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "anthropic/claude-3-opus": {
+            "context_window": 200000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "google/gemini-1.5-pro": {
+            "context_window": 2000000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "google/gemini-1.5-flash": {
+            "context_window": 1000000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "openai/gpt-4o": {
+            "context_window": 128000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "openai/gpt-4o-mini": {
+            "context_window": 128000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "openai/gpt-4-turbo": {
+            "context_window": 128000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "meta-llama/llama-3.1-405b-instruct": {
+            "context_window": 128000,
+            "supports_tools": True,
+            "supports_vision": False,
+        },
+        "meta-llama/llama-3.1-70b-instruct": {
+            "context_window": 128000,
+            "supports_tools": True,
+            "supports_vision": False,
+        },
+        "mistralai/mistral-large": {
+            "context_window": 128000,
+            "supports_tools": True,
+            "supports_vision": False,
+        },
+        "nvidia/nemotron-3-ultra": {
+            "context_window": 128000,
+            "supports_tools": True,
+            "supports_vision": False,
+        },
+        "nvidia/nemotron-3-ultra-550b-a55b:free": {
+            "context_window": 128000,
+            "supports_tools": True,
+            "supports_vision": False,
+        },
     },
-
     "openai": {
         "gpt-4o": {"context_window": 128000, "supports_tools": True, "supports_vision": True},
         "gpt-4o-mini": {"context_window": 128000, "supports_tools": True, "supports_vision": True},
         "gpt-4-turbo": {"context_window": 128000, "supports_tools": True, "supports_vision": True},
         "gpt-4": {"context_window": 8192, "supports_tools": True, "supports_vision": False},
-        "gpt-3.5-turbo": {"context_window": 16384, "supports_tools": True, "supports_vision": False},
+        "gpt-3.5-turbo": {
+            "context_window": 16384,
+            "supports_tools": True,
+            "supports_vision": False,
+        },
         "o1-preview": {"context_window": 128000, "supports_tools": False, "supports_vision": False},
         "o1-mini": {"context_window": 128000, "supports_tools": False, "supports_vision": False},
     },
-
     "anthropic": {
-        "claude-3-5-sonnet-20241022": {"context_window": 200000, "supports_tools": True, "supports_vision": True},
-        "claude-3-5-haiku-20241022": {"context_window": 200000, "supports_tools": True, "supports_vision": True},
-        "claude-3-opus-20240229": {"context_window": 200000, "supports_tools": True, "supports_vision": True},
-        "claude-3-sonnet-20240229": {"context_window": 200000, "supports_tools": True, "supports_vision": True},
-        "claude-3-haiku-20240307": {"context_window": 200000, "supports_tools": True, "supports_vision": True},
+        "claude-3-5-sonnet-20241022": {
+            "context_window": 200000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "claude-3-5-haiku-20241022": {
+            "context_window": 200000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "claude-3-opus-20240229": {
+            "context_window": 200000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "claude-3-sonnet-20240229": {
+            "context_window": 200000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "claude-3-haiku-20240307": {
+            "context_window": 200000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
     },
-
     "nvidia": {
-        "nvidia/nemotron-3-ultra": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
-        "nvidia/llama-3.1-nemotron-70b-instruct": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
-        "nvidia/nemotron-3-ultra-550b-a55b": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
+        "nvidia/nemotron-3-ultra": {
+            "context_window": 128000,
+            "supports_tools": True,
+            "supports_vision": False,
+        },
+        "nvidia/llama-3.1-nemotron-70b-instruct": {
+            "context_window": 128000,
+            "supports_tools": True,
+            "supports_vision": False,
+        },
+        "nvidia/nemotron-3-ultra-550b-a55b": {
+            "context_window": 128000,
+            "supports_tools": True,
+            "supports_vision": False,
+        },
     },
-
     "google": {
-        "gemini-1.5-pro": {"context_window": 2000000, "supports_tools": True, "supports_vision": True},
-        "gemini-1.5-flash": {"context_window": 1000000, "supports_tools": True, "supports_vision": True},
-        "gemini-1.0-pro": {"context_window": 32768, "supports_tools": True, "supports_vision": True},
+        "gemini-1.5-pro": {
+            "context_window": 2000000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "gemini-1.5-flash": {
+            "context_window": 1000000,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
+        "gemini-1.0-pro": {
+            "context_window": 32768,
+            "supports_tools": True,
+            "supports_vision": True,
+        },
     },
-
     "ollama": {
         "llama3.1": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
         "llama3.2": {"context_window": 128000, "supports_tools": True, "supports_vision": False},
@@ -66,11 +161,9 @@ _PROVIDER_MODELS: dict[str, dict[str, dict[str, Any]]] = {
         "codellama": {"context_window": 16384, "supports_tools": False, "supports_vision": False},
         "phi3": {"context_window": 4096, "supports_tools": False, "supports_vision": False},
     },
-
     "lmstudio": {
         "local-model": {"context_window": 32768, "supports_tools": False, "supports_vision": False},
     },
-
     "custom": {},
 }
 
@@ -84,15 +177,12 @@ _PROVIDER_ALIASES: dict[str, str] = {
     "sonnet": "openrouter:anthropic/claude-3.5-sonnet",
     "haiku": "openrouter:anthropic/claude-3.5-haiku",
     "opus": "openrouter:anthropic/claude-3-opus",
-    "gemini-pro": "openrouter:google/gemini-1.5-pro",
-    "gemini-flash": "openrouter:google/gemini-1.5-flash",
     "gpt4o": "openrouter:openai/gpt-4o",
     "gpt4o-mini": "openrouter:openai/gpt-4o-mini",
     "llama405b": "openrouter:meta-llama/llama-3.1-405b-instruct",
     "llama70b": "openrouter:meta-llama/llama-3.1-70b-instruct",
     "mistral-large": "openrouter:mistralai/mistral-large",
     "nemotron": "openrouter:nvidia/nemotron-3-ultra",
-
     # Direct provider shortcuts
     "gpt-4o": "openai:gpt-4o",
     "gpt-4o-mini": "openai:gpt-4o-mini",

@@ -23,8 +23,15 @@ TASK_DECOMPOSE_SCHEMA = {
             "type": "object",
             "properties": {
                 "goal": {"type": "string", "description": "The high-level goal to decompose"},
-                "max_depth": {"type": "integer", "description": "Maximum decomposition depth (default: 3)", "default": 3},
-                "constraints": {"type": "string", "description": "Constraints or requirements to consider"},
+                "max_depth": {
+                    "type": "integer",
+                    "description": "Maximum decomposition depth (default: 3)",
+                    "default": 3,
+                },
+                "constraints": {
+                    "type": "string",
+                    "description": "Constraints or requirements to consider",
+                },
             },
             "required": ["goal"],
         },
@@ -40,24 +47,29 @@ def task_decompose_tool(goal: str, max_depth: int = 3, constraints: str = None) 
     """Decompose a goal into subtasks."""
     # This is a template - in practice, the LLM would do the decomposition
     # We return a structured template for the LLM to fill in
-    return json.dumps({
-        "goal": goal,
-        "max_depth": max_depth,
-        "constraints": constraints,
-        "decomposition_template": {
-            "subtasks": [
-                {
-                    "id": "1",
-                    "title": "Subtask 1",
-                    "description": "Description",
-                    "dependencies": [],
-                    "estimated_effort": "low|medium|high",
-                    "skills_needed": [],
-                }
-            ],
-        },
-        "instruction": "Fill in the decomposition_template with actual subtasks. Return the completed structure.",
-    })
+    return json.dumps(
+        {
+            "goal": goal,
+            "max_depth": max_depth,
+            "constraints": constraints,
+            "decomposition_template": {
+                "subtasks": [
+                    {
+                        "id": "1",
+                        "title": "Subtask 1",
+                        "description": "Description",
+                        "dependencies": [],
+                        "estimated_effort": "low|medium|high",
+                        "skills_needed": [],
+                    }
+                ],
+            },
+            "instruction": (
+                "Fill in the decomposition_template with actual subtasks. "
+                "Return the completed structure."
+            ),
+        }
+    )
 
 
 registry.register(
@@ -90,13 +102,20 @@ PLAN_CREATE_SCHEMA = {
                             "title": {"type": "string"},
                             "description": {"type": "string"},
                             "dependencies": {"type": "array", "items": {"type": "string"}},
-                            "estimated_effort": {"type": "string", "enum": ["low", "medium", "high"]},
+                            "estimated_effort": {
+                                "type": "string",
+                                "enum": ["low", "medium", "high"],
+                            },
                             "skills_needed": {"type": "array", "items": {"type": "string"}},
                         },
                         "required": ["id", "title"],
                     },
                 },
-                "parallel_groups": {"type": "boolean", "description": "Group independent tasks for parallel execution", "default": True},
+                "parallel_groups": {
+                    "type": "boolean",
+                    "description": "Group independent tasks for parallel execution",
+                    "default": True,
+                },
             },
             "required": ["subtasks"],
         },
@@ -151,32 +170,40 @@ def plan_create_tool(subtasks: list[dict], parallel_groups: bool = True) -> str:
             phase_tasks = []
             for tid in ready:
                 task = task_map[tid]
-                phase_tasks.append({
-                    "task_id": tid,
-                    "title": task["title"],
-                    "description": task.get("description", ""),
-                    "can_parallel": len(ready) > 1,
-                })
+                phase_tasks.append(
+                    {
+                        "task_id": tid,
+                        "title": task["title"],
+                        "description": task.get("description", ""),
+                        "can_parallel": len(ready) > 1,
+                    }
+                )
                 remaining.remove(tid)
 
-            plan["phases"].append({
-                "phase": phase,
-                "tasks": phase_tasks,
-            })
+            plan["phases"].append(
+                {
+                    "phase": phase,
+                    "tasks": phase_tasks,
+                }
+            )
             phase += 1
     else:
         # Sequential
         for i, tid in enumerate(order):
             task = task_map[tid]
-            plan["phases"].append({
-                "phase": i + 1,
-                "tasks": [{
-                    "task_id": tid,
-                    "title": task["title"],
-                    "description": task.get("description", ""),
-                    "can_parallel": False,
-                }],
-            })
+            plan["phases"].append(
+                {
+                    "phase": i + 1,
+                    "tasks": [
+                        {
+                            "task_id": tid,
+                            "title": task["title"],
+                            "description": task.get("description", ""),
+                            "can_parallel": False,
+                        }
+                    ],
+                }
+            )
 
     return json.dumps({"plan": plan})
 
@@ -203,7 +230,11 @@ PLAN_REVIEW_SCHEMA = {
             "type": "object",
             "properties": {
                 "plan": {"type": "object", "description": "The plan to review"},
-                "criteria": {"type": "array", "items": {"type": "string"}, "description": "Review criteria"},
+                "criteria": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Review criteria",
+                },
             },
             "required": ["plan"],
         },
@@ -235,14 +266,16 @@ def plan_review_tool(plan: dict, criteria: list[str] = None) -> str:
     # Check for orphaned tasks
     # Check effort estimates
 
-    return json.dumps({
-        "review": {
-            "passed": len(issues) == 0,
-            "issues": issues,
-            "warnings": warnings,
-            "score": 100 - len(issues) * 20 - len(warnings) * 5,
+    return json.dumps(
+        {
+            "review": {
+                "passed": len(issues) == 0,
+                "issues": issues,
+                "warnings": warnings,
+                "score": 100 - len(issues) * 20 - len(warnings) * 5,
+            }
         }
-    })
+    )
 
 
 registry.register(

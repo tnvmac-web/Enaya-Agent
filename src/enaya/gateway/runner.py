@@ -19,9 +19,11 @@ from enaya.run_agent import AIAgent, create_agent
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class MessageEvent:
     """Incoming message event from a platform."""
+
     platform: str
     chat_type: str  # private, group, channel
     chat_id: str
@@ -36,6 +38,7 @@ class MessageEvent:
 @dataclass
 class GatewaySession:
     """Gateway session info."""
+
     session_key: str
     profile: str
     platform: str
@@ -51,6 +54,7 @@ class GatewaySession:
 @dataclass
 class PendingMessage:
     """Queued message when agent is busy."""
+
     event: MessageEvent
     future: asyncio.Future
 
@@ -58,6 +62,7 @@ class PendingMessage:
 # =============================================================================
 # Gateway Runner
 # =============================================================================
+
 
 class GatewayRunner:
     """
@@ -221,7 +226,7 @@ class GatewayRunner:
     async def _send_reply(self, event: MessageEvent, text: str) -> None:
         """Send reply back through the platform adapter."""
         adapter = self._adapters.get(event.platform)
-        if adapter and hasattr(adapter, 'send_message'):
+        if adapter and hasattr(adapter, "send_message"):
             try:
                 await adapter.send_message(
                     chat_id=event.chat_id,
@@ -244,7 +249,7 @@ class GatewayRunner:
         if platform in self._home_channels:
             chat_type, chat_id = self._home_channels[platform]
             adapter = self._adapters.get(platform)
-            if adapter and hasattr(adapter, 'send_message'):
+            if adapter and hasattr(adapter, "send_message"):
                 await adapter.send_message(chat_id=chat_id, text=text)
 
     async def start(self) -> None:
@@ -254,7 +259,7 @@ class GatewayRunner:
 
         # Start all adapters
         for adapter in self._adapters.values():
-            if hasattr(adapter, 'start'):
+            if hasattr(adapter, "start"):
                 await adapter.start()
 
     async def stop(self) -> None:
@@ -263,7 +268,7 @@ class GatewayRunner:
 
         # Stop all adapters
         for adapter in self._adapters.values():
-            if hasattr(adapter, 'stop'):
+            if hasattr(adapter, "stop"):
                 await adapter.stop()
 
         # Interrupt all running agents
@@ -277,6 +282,7 @@ class GatewayRunner:
 # =============================================================================
 # Gateway CLI Commands
 # =============================================================================
+
 
 async def gateway_main(profile: str = "default") -> None:
     """Main gateway entry point."""

@@ -28,9 +28,11 @@ class EmailAdapter:
         self.smtp_port = int(os.environ.get("EMAIL_SMTP_PORT", "587"))
         self.email_address = os.environ.get("EMAIL_ADDRESS")
         self.email_password = os.environ.get("EMAIL_PASSWORD")
-        self.allowed_users = set(
-            os.environ.get("EMAIL_ALLOWED_USERS", "").split(",")
-        ) if os.environ.get("EMAIL_ALLOWED_USERS") else set()
+        self.allowed_users = (
+            set(os.environ.get("EMAIL_ALLOWED_USERS", "").split(","))
+            if os.environ.get("EMAIL_ALLOWED_USERS")
+            else set()
+        )
         self.allow_all = os.environ.get("EMAIL_ALLOW_ALL_USERS", "false").lower() == "true"
         self.poll_interval = int(os.environ.get("EMAIL_POLL_INTERVAL", "30"))
 
@@ -57,18 +59,6 @@ class EmailAdapter:
             except asyncio.CancelledError:
                 pass
         print("Email adapter stopped")
-
-    def authorize_user(self, email_addr: str) -> bool:
-        """Check if user is authorized."""
-        if self.allow_all:
-            return True
-        return email_addr.lower() in {e.lower() for e in self.allowed_users}
-
-    def authorize_user(self, user_id: str) -> bool:
-        """Check if user is authorized (by email)."""
-        if self.allow_all:
-            return True
-        return user_id.lower() in {e.lower() for e in self.allowed_users}
 
     async def _poll_loop(self) -> None:
         """Main polling loop."""

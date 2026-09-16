@@ -23,7 +23,8 @@ def run_conversation(
 ) -> str:
     """
     Main conversation loop.
-    Handles: history management, prompt building, API calls, tool execution, compression, persistence.
+    Handles: history management, prompt building, API calls,
+    tool execution, compression, persistence.
     """
     task_id = str(uuid.uuid4())
     agent._iteration_count = 0
@@ -54,8 +55,8 @@ def run_conversation(
         # Parse response
         content = response.get("content", "")
         tool_calls = response.get("tool_calls", [])
-        finish_reason = response.get("finish_reason", "stop")
-        usage = response.get("usage", {})
+        _ = response.get("finish_reason", "stop")
+        _ = response.get("usage", {})
 
         # Handle reasoning content if present
         reasoning = response.get("reasoning")
@@ -159,7 +160,8 @@ def _execute_tool_calls(agent: AIAgent, tool_calls: list[dict], task_id: str) ->
     """Execute tool calls sequentially or concurrently."""
     # Check if any tool requires sequential execution (e.g., clarify)
     requires_sequential = any(
-        tc.get("function", {}).get("name") in ("clarify", "session_search", "memory", "todo", "delegate_task")
+        tc.get("function", {}).get("name")
+        in ("clarify", "session_search", "memory", "todo", "delegate_task")
         for tc in tool_calls
     )
 
@@ -176,8 +178,7 @@ def _execute_tool_calls(agent: AIAgent, tool_calls: list[dict], task_id: str) ->
 
         with ThreadPoolExecutor(max_workers=len(tool_calls)) as executor:
             futures = {
-                executor.submit(_execute_single_tool, agent, tc, task_id): tc
-                for tc in tool_calls
+                executor.submit(_execute_single_tool, agent, tc, task_id): tc for tc in tool_calls
             }
             for future in as_completed(futures):
                 results.append(future.result())
@@ -200,7 +201,7 @@ def _execute_single_tool(agent: AIAgent, tool_call: dict, task_id: str) -> dict:
 
     try:
         # Parse arguments
-        args = json.loads(tool_args) if isinstance(tool_args, str) else tool_args
+        _ = json.loads(tool_args) if isinstance(tool_args, str) else tool_args
 
         # Execute via agent's execute_tool (handles agent-level tools)
         result_content = agent.execute_tool(tool_call, task_id)

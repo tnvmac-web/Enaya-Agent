@@ -8,33 +8,37 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import os
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
-from enaya.gateway.runner import GatewayRunner
+from enaya.gateway.runner import GatewayRunner as GatewayRunner
 from enaya.tools.registry import registry
 
 # =============================================================================
 # Plugin Manifest
 # =============================================================================
 
+
 @dataclass
 class PluginManifest:
     """Plugin manifest (PLUGIN.yaml)."""
+
     schema_version: int = 2
     name: str = ""
     version: str = "1.0.0"
     description: str = ""
     author: str = ""
     license: str = "MIT"
-    kind: str = "tool"  # tool, platform, model-provider, memory, context-engine, image-gen, video-gen, web-search, browser, terminal-environment
+    kind: str = (
+        "tool"  # tool, platform, model-provider, memory, context-engine, "
+        "image-gen, video-gen, web-search, browser, terminal-environment"
+    )
     capabilities: dict[str, bool] = field(default_factory=dict)
     dependencies: list[str] = field(default_factory=list)
     python_requires: str = ">=3.11"
@@ -54,6 +58,7 @@ class PluginManifest:
 # =============================================================================
 # Plugin Context
 # =============================================================================
+
 
 class PluginContext:
     """Context provided to plugins for registration."""
@@ -134,6 +139,7 @@ class PluginContext:
 # Plugin Base Class
 # =============================================================================
 
+
 class PluginBase(ABC):
     """Base class for plugins."""
 
@@ -155,6 +161,7 @@ class PluginBase(ABC):
 # Plugin Manager
 # =============================================================================
 
+
 class PluginManager:
     """Manages plugin discovery, loading, and lifecycle."""
 
@@ -162,9 +169,9 @@ class PluginManager:
         self.profile = profile
         self.plugins: dict[str, PluginBase] = {}
         self._plugin_dirs = [
-            Path.home() / ".enaya" / "plugins",           # User plugins
-            Path.cwd() / ".enaya" / "plugins",             # Project plugins
-            Path(__file__).parent.parent / "plugins",      # Bundled plugins
+            Path.home() / ".enaya" / "plugins",  # User plugins
+            Path.cwd() / ".enaya" / "plugins",  # Project plugins
+            Path(__file__).parent.parent / "plugins",  # Bundled plugins
         ]
 
     def discover_plugins(self) -> list[Path]:
@@ -256,6 +263,7 @@ class PluginManager:
 # Built-in Plugin Types
 # =============================================================================
 
+
 # Tool Plugin
 class ToolPlugin(PluginBase):
     """Plugin that registers tools."""
@@ -264,7 +272,14 @@ class ToolPlugin(PluginBase):
         # Override in subclass
         pass
 
-    def register_tool(self, name: str, toolset: str, schema: dict, handler: Callable, check_fn: Callable = lambda: True) -> None:
+    def register_tool(
+        self,
+        name: str,
+        toolset: str,
+        schema: dict,
+        handler: Callable,
+        check_fn: Callable = lambda: True,
+    ) -> None:
         self.context.register_tool(name, toolset, schema, handler, check_fn)
 
 
@@ -321,6 +336,7 @@ class ContextEnginePlugin(PluginBase):
 # =============================================================================
 # Plugin CLI Commands
 # =============================================================================
+
 
 def plugin_doctor(plugin_path: str) -> dict:
     """Validate a plugin."""

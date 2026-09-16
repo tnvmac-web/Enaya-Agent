@@ -1,6 +1,6 @@
 """
 Enaya Agent - Prompt Builder
-System prompt assembly (stable → context → volatile).
+System prompt assembly (stable -> context -> volatile).
 Mirrors Hermes Agent's agent/prompt_builder.py exactly.
 """
 
@@ -13,46 +13,52 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from enaya.run_agent import AIAgent
 
-
 # =============================================================================
 # Default Agent Identity (replaced by SOUL.md when present)
 # =============================================================================
 
-DEFAULT_AGENT_IDENTITY = """You are Enaya Agent — a task-delegation AI agent specialized in research, planning, and multi-agent orchestration.
-
-## Core Capabilities
-- **Delegation**: Break complex tasks into subtasks and spawn specialized subagents
-- **Research**: Deep web search, academic paper analysis, source validation, synthesis
-- **Planning**: Hierarchical task decomposition, structured plan creation, validation
-- **Synthesis**: Multi-source result aggregation, comparison, claim extraction
-- **Codebase**: Search, analyze, modify, and test code across repositories
-
-## Working Style
-- Think before acting: decompose → plan → delegate → synthesize
-- Prefer parallel subagent execution for independent subtasks
-- Always cite sources and provide provenance for claims
-- Maintain context across long-running delegations via compression
-- Surface uncertainties and conflicting evidence explicitly
-
-## Tool Usage
-- Use `delegate_task` for complex subtasks requiring independent context
-- Use `web_search` + `web_extract` for current information
-- Use `arxiv_search` + `paper_analyze` for academic sources
-- Use `task_decompose` + `plan_create` for structured planning
-- Use `synthesize_results` to merge subagent outputs
-- Use `code_search` / `code_analyze` for codebase tasks
-- Batch independent tool calls when possible
-
-## Output Format
-- Be concise but thorough
-- Use structured formatting (tables, lists, headers) for complex answers
-- Always include a summary for multi-step operations
-- Flag when compression has occurred in long conversations"""
+DEFAULT_AGENT_IDENTITY = (
+    "You are Enaya Agent - a task-delegation AI agent specialized in "
+    "research, planning, and multi-agent orchestration.\n\n"
+    "## Core Capabilities\n"
+    "- **Delegation**: Break complex tasks into subtasks and spawn "
+    "specialized subagents\n"
+    "- **Research**: Deep web search, academic paper analysis, source "
+    "validation, synthesis\n"
+    "- **Planning**: Hierarchical task decomposition, structured plan "
+    "creation, validation\n"
+    "- **Synthesis**: Multi-source result aggregation, comparison, "
+    "claim extraction\n"
+    "- **Codebase**: Search, analyze, modify, and test code across "
+    "repositories\n\n"
+    "## Working Style\n"
+    "- Think before acting: decompose -> plan -> delegate -> synthesize\n"
+    "- Prefer parallel subagent execution for independent subtasks\n"
+    "- Always cite sources and provide provenance for claims\n"
+    "- Maintain context across long-running delegations via compression\n"
+    "- Surface uncertainties and conflicting evidence explicitly\n\n"
+    "## Tool Usage\n"
+    "- Use `delegate_task` for complex subtasks requiring independent "
+    "context\n"
+    "- Use `web_search` + `web_extract` for current information\n"
+    "- Use `arxiv_search` + `paper_analyze` for academic sources\n"
+    "- Use `task_decompose` + `plan_create` for structured planning\n"
+    "- Use `synthesize_results` to merge subagent outputs\n"
+    "- Use `code_search` / `code_analyze` for codebase tasks\n"
+    "- Batch independent tool calls when possible\n\n"
+    "## Output Format\n"
+    "- Be concise but thorough\n"
+    "- Use structured formatting (tables, lists, headers) for complex "
+    "answers\n"
+    "- Always include a summary for multi-step operations\n"
+    "- Flag when compression has occurred in long conversations"
+)
 
 
 # =============================================================================
 # System Prompt Builder
 # =============================================================================
+
 
 def build_system_prompt(
     agent: AIAgent,
@@ -61,7 +67,7 @@ def build_system_prompt(
     skip_soul: bool = False,
 ) -> str:
     """
-    Build the three-tier system prompt: stable → context → volatile.
+    Build the three-tier system prompt: stable -> context -> volatile.
     Cached across turns unless explicitly rebuilt.
     """
     parts = []
@@ -119,6 +125,7 @@ def build_volatile_prompt(agent: AIAgent) -> str:
 
     # Timestamp
     from datetime import datetime
+
     parts.append(f"## Current Time\n{datetime.now().isoformat()}")
 
     # Platform hint
@@ -130,6 +137,7 @@ def build_volatile_prompt(agent: AIAgent) -> str:
 # =============================================================================
 # Tool Guidance
 # =============================================================================
+
 
 def build_tool_guidance(tool_schemas: list[dict]) -> str:
     """Generate tool usage guidance from schemas."""
@@ -162,6 +170,7 @@ def build_tool_guidance(tool_schemas: list[dict]) -> str:
 # Skills Prompt
 # =============================================================================
 
+
 def build_skills_prompt(agent: AIAgent) -> str:
     """Build active skills descriptions."""
     # Skills are loaded from skills/ directory and config
@@ -172,6 +181,7 @@ def build_skills_prompt(agent: AIAgent) -> str:
 # =============================================================================
 # Context Files (Project Context)
 # =============================================================================
+
 
 def build_context_files_prompt(agent: AIAgent, *, skip_soul: bool = False) -> str:
     """
@@ -236,13 +246,16 @@ def read_context_file(path: Path) -> str:
 # SOUL.md Loading
 # =============================================================================
 
+
 def load_soul_md(profile: str) -> str | None:
     """Load SOUL.md for the given profile."""
     # Check profile-specific location
     hermes_home = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes"))
     # For Enaya, use ENAYA_HOME or same location
     enaya_home = Path(os.environ.get("ENAYA_HOME", hermes_home))
-    profile_dir = enaya_home / "profiles" / profile if (enaya_home / "profiles").exists() else enaya_home
+    profile_dir = (
+        enaya_home / "profiles" / profile if (enaya_home / "profiles").exists() else enaya_home
+    )
 
     for path in [profile_dir / "SOUL.md", enaya_home / "SOUL.md"]:
         if path.exists():
@@ -257,11 +270,14 @@ def load_soul_md(profile: str) -> str | None:
 # Memory Snapshots
 # =============================================================================
 
+
 def load_memory_snapshot(profile: str) -> str:
     """Load MEMORY.md and USER.md for volatile tier."""
     hermes_home = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes"))
     enaya_home = Path(os.environ.get("ENAYA_HOME", hermes_home))
-    profile_dir = enaya_home / "profiles" / profile if (enaya_home / "profiles").exists() else enaya_home
+    profile_dir = (
+        enaya_home / "profiles" / profile if (enaya_home / "profiles").exists() else enaya_home
+    )
 
     parts = []
     for name in ["MEMORY.md", "USER.md"]:
@@ -282,6 +298,7 @@ def load_memory_snapshot(profile: str) -> str:
 # Profile Data
 # =============================================================================
 
+
 def get_profile_data(profile: str) -> str:
     """Get profile-specific configuration data."""
     # Could include model preferences, toolset config, etc.
@@ -291,6 +308,7 @@ def get_profile_data(profile: str) -> str:
 # =============================================================================
 # Prompt Caching (Anthropic)
 # =============================================================================
+
 
 def apply_prompt_caching(messages: list[dict], *, cache_ttl: str = "5m") -> list[dict]:
     """
@@ -303,7 +321,11 @@ def apply_prompt_caching(messages: list[dict], *, cache_ttl: str = "5m") -> list
     # BP1: System prompt (always cached)
     if messages and messages[0]["role"] == "system":
         messages[0]["content"] = [
-            {"type": "text", "text": messages[0]["content"], "cache_control": {"type": "ephemeral", "ttl": cache_ttl}}
+            {
+                "type": "text",
+                "text": messages[0]["content"],
+                "cache_control": {"type": "ephemeral", "ttl": cache_ttl},
+            }
         ]
 
     # BP2-4: 3rd-to-last, 2nd-to-last, last non-system messages
@@ -312,7 +334,11 @@ def apply_prompt_caching(messages: list[dict], *, cache_ttl: str = "5m") -> list
             msg_idx = non_system_indices[idx]
             if isinstance(messages[msg_idx]["content"], str):
                 messages[msg_idx]["content"] = [
-                    {"type": "text", "text": messages[msg_idx]["content"], "cache_control": {"type": "ephemeral", "ttl": cache_ttl}}
+                    {
+                        "type": "text",
+                        "text": messages[msg_idx]["content"],
+                        "cache_control": {"type": "ephemeral", "ttl": cache_ttl},
+                    }
                 ]
 
     return messages

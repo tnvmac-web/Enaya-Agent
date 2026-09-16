@@ -29,10 +29,13 @@ PROCESS_SCHEMA = {
                 "action": {
                     "type": "string",
                     "enum": ["start", "stop", "list", "logs", "status"],
-                    "description": "Action to perform"
+                    "description": "Action to perform",
                 },
                 "command": {"type": "string", "description": "Command to start (for start action)"},
-                "pid": {"type": "integer", "description": "Process ID (for stop/logs/status actions)"},
+                "pid": {
+                    "type": "integer",
+                    "description": "Process ID (for stop/logs/status actions)",
+                },
                 "name": {"type": "string", "description": "Process name (for start action)"},
                 "cwd": {"type": "string", "description": "Working directory"},
             },
@@ -50,7 +53,9 @@ def check_process_requirements() -> bool:
 _processes: dict[int, dict] = {}
 
 
-def process_tool(action: str, command: str = None, pid: int = None, name: str = None, cwd: str = None) -> str:
+def process_tool(
+    action: str, command: str = None, pid: int = None, name: str = None, cwd: str = None
+) -> str:
     """Process management tool."""
     global _processes
 
@@ -79,11 +84,13 @@ def process_tool(action: str, command: str = None, pid: int = None, name: str = 
             }
             _processes[proc.pid] = proc_info
 
-            return json.dumps({
-                "success": True,
-                "pid": proc.pid,
-                "message": f"Started process {proc.pid}: {command}"
-            })
+            return json.dumps(
+                {
+                    "success": True,
+                    "pid": proc.pid,
+                    "message": f"Started process {proc.pid}: {command}",
+                }
+            )
 
         elif action == "stop":
             if pid is None:
@@ -98,7 +105,7 @@ def process_tool(action: str, command: str = None, pid: int = None, name: str = 
             try:
                 os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
                 proc.wait(timeout=5)
-            except:
+            except Exception:
                 os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
 
             del _processes[pid]
@@ -107,12 +114,14 @@ def process_tool(action: str, command: str = None, pid: int = None, name: str = 
         elif action == "list":
             result = []
             for pid, info in _processes.items():
-                result.append({
-                    "pid": pid,
-                    "name": info["name"],
-                    "command": info["command"],
-                    "running_time": time.time() - info["started_at"],
-                })
+                result.append(
+                    {
+                        "pid": pid,
+                        "name": info["name"],
+                        "command": info["command"],
+                        "running_time": time.time() - info["started_at"],
+                    }
+                )
             return json.dumps({"processes": result})
 
         elif action == "logs":
@@ -123,11 +132,13 @@ def process_tool(action: str, command: str = None, pid: int = None, name: str = 
                 return json.dumps({"error": f"Process {pid} not found"})
 
             # For simplicity, return empty logs (real implementation would capture stdout/stderr)
-            return json.dumps({
-                "pid": pid,
-                "stdout": "Logs not captured in this implementation",
-                "stderr": "",
-            })
+            return json.dumps(
+                {
+                    "pid": pid,
+                    "stdout": "Logs not captured in this implementation",
+                    "stderr": "",
+                }
+            )
 
         elif action == "status":
             if pid is None:
@@ -139,23 +150,21 @@ def process_tool(action: str, command: str = None, pid: int = None, name: str = 
             proc_info = _processes[pid]
             proc = proc_info["process"]
 
-            return json.dumps({
-                "pid": pid,
-                "name": proc_info["name"],
-                "running": proc.poll() is None,
-                "returncode": proc.poll(),
-                "running_time": time.time() - proc_info["started_at"],
-            })
+            return json.dumps(
+                {
+                    "pid": pid,
+                    "name": proc_info["name"],
+                    "running": proc.poll() is None,
+                    "returncode": proc.poll(),
+                    "running_time": time.time() - proc_info["started_at"],
+                }
+            )
 
         else:
             return json.dumps({"error": f"Unknown action: {action}"})
 
     except Exception as e:
         return json.dumps({"error": str(e)})
-
-
-def check_process_requirements() -> bool:
-    return True
 
 
 registry.register(
@@ -169,7 +178,10 @@ registry.register(
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "action": {"type": "string", "enum": ["start", "stop", "list", "logs", "status"]},
+                    "action": {
+                        "type": "string",
+                        "enum": ["start", "stop", "list", "logs", "status"],
+                    },
                     "command": {"type": "string"},
                     "pid": {"type": "integer"},
                     "name": {"type": "string"},

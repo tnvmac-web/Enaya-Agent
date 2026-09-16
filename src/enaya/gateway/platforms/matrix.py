@@ -6,6 +6,7 @@ Matrix bot integration for the gateway.
 
 from __future__ import annotations
 
+import asyncio
 import os
 
 from matrix_nio import AsyncClient, MatrixRoom, RoomMessageText
@@ -21,9 +22,11 @@ class MatrixAdapter:
         self.homeserver = os.environ.get("MATRIX_HOMESERVER", "https://matrix.org")
         self.user_id = os.environ.get("MATRIX_USER_ID")
         self.access_token = os.environ.get("MATRIX_ACCESS_TOKEN")
-        self.allowed_users = set(
-            os.environ.get("MATRIX_ALLOWED_USERS", "").split(",")
-        ) if os.environ.get("MATRIX_ALLOWED_USERS") else set()
+        self.allowed_users = (
+            set(os.environ.get("MATRIX_ALLOWED_USERS", "").split(","))
+            if os.environ.get("MATRIX_ALLOWED_USERS")
+            else set()
+        )
         self.allow_all = os.environ.get("MATRIX_ALLOW_ALL_USERS", "false").lower() == "true"
 
         self.client: AsyncClient | None = None
@@ -46,7 +49,7 @@ class MatrixAdapter:
         self.client.add_event_callback(self._on_message, RoomMessageText)
 
         # Start sync
-        sync_task = asyncio.create_task(self.client.sync_forever(timeout=30000))
+        asyncio.create_task(self.client.sync_forever(timeout=30000))
 
         self._running = True
         print("Matrix adapter started")
@@ -102,9 +105,7 @@ class MatrixAdapter:
                     "body": text,
                 }
                 if reply_to:
-                    content["m.relates_to"] = {
-                        "m.in_reply_to": {"event_id": reply_to}
-                    }
+                    content["m.relates_to"] = {"m.in_reply_to": {"event_id": reply_to}}
                 await self.client.room_send(
                     room_id=chat_id,
                     message_type="m.room.message",

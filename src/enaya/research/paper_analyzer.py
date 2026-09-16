@@ -11,6 +11,7 @@ from dataclasses import dataclass
 @dataclass
 class PaperAnalysis:
     """Structured analysis of an academic paper."""
+
     title: str
     authors: list[str]
     abstract: str
@@ -34,16 +35,20 @@ class PaperAnalyzer:
     def analyze(self, source: str, focus: str = None) -> PaperAnalysis:
         """Analyze a paper and return structured analysis."""
         # Use agent's paper_analyze tool
-        result = self.agent.execute_tool({
-            "function": {
-                "name": "paper_analyze",
-                "arguments": {"source": source, "focus": focus or ""}
+        result = self.agent.execute_tool(
+            {
+                "function": {
+                    "name": "paper_analyze",
+                    "arguments": {"source": source, "focus": focus or ""},
+                },
+                "id": "paper_analyze_1",
             },
-            "id": "paper_analyze_1"
-        }, task_id="paper_analysis")
+            task_id="paper_analysis",
+        )
 
         # Parse and structure
         import json
+
         try:
             data = json.loads(result)
             return PaperAnalysis(
@@ -51,7 +56,7 @@ class PaperAnalyzer:
                 authors=[],
                 abstract=data.get("full_text", "")[:500],
             )
-        except:
+        except Exception:
             return PaperAnalysis(title="Error", authors=[], abstract=str(result))
 
     def extract_key_points(self, paper_text: str) -> dict:

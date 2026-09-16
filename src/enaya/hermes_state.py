@@ -35,6 +35,7 @@ class SessionStore:
     def _get_db_path(self) -> Path:
         """Get database path for profile."""
         import os
+
         enaya_home = Path(os.environ.get("ENAYA_HOME", Path.home() / ".enaya"))
         if self.profile != "default":
             enaya_home = enaya_home / "profiles" / self.profile
@@ -122,33 +123,50 @@ class SessionStore:
             """)
 
             # FTS triggers for automatic sync
-            conn.execute("""
-                CREATE TRIGGER IF NOT EXISTS messages_fts_insert AFTER INSERT ON messages BEGIN
-                    INSERT INTO messages_fts (rowid, session_id, role, content, tool_call_id, row_id)
-                    VALUES (new.id, new.session_id, new.role, new.content, new.tool_call_id, new.row_id);
+            conn.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS messages_fts_insert AFTER INSERT
+                ON messages BEGIN
+                    INSERT INTO messages_fts
+                    (rowid, session_id, role, content, tool_call_id, row_id)
+                    VALUES (new.id, new.session_id, new.role, new.content,
+                            new.tool_call_id, new.row_id);
                 END
-            """)
+                """
+            )
 
-            conn.execute("""
-                CREATE TRIGGER IF NOT EXISTS messages_fts_delete AFTER DELETE ON messages BEGIN
+            conn.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS messages_fts_delete AFTER DELETE
+                ON messages BEGIN
                     DELETE FROM messages_fts WHERE rowid = old.id;
                 END
-            """)
+                """
+            )
 
-            conn.execute("""
-                CREATE TRIGGER IF NOT EXISTS messages_fts_update AFTER UPDATE ON messages BEGIN
+            conn.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS messages_fts_update AFTER UPDATE
+                ON messages BEGIN
                     DELETE FROM messages_fts WHERE rowid = old.id;
-                    INSERT INTO messages_fts (rowid, session_id, role, content, tool_call_id, row_id)
-                    VALUES (new.id, new.session_id, new.role, new.content, new.tool_call_id, new.row_id);
+                    INSERT INTO messages_fts
+                    (rowid, session_id, role, content, tool_call_id, row_id)
+                    VALUES (new.id, new.session_id, new.role, new.content,
+                            new.tool_call_id, new.row_id);
                 END
-            """)
+                """
+            )
 
             # Indexes
             conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_profile ON sessions(profile)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_lineage ON sessions(lineage_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_parent ON sessions(parent_session_id)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_sessions_parent ON sessions(parent_session_id)"
+            )
             conn.execute("CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_messages_row_id ON messages(session_id, row_id)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_messages_row_id ON messages(session_id, row_id)"
+            )
 
     # =============================================================================
     # Session Operations
@@ -168,10 +186,25 @@ class SessionStore:
         lineage = lineage_id or session_id
 
         with self._transaction() as conn:
-            conn.execute("""
-                INSERT INTO sessions (id, profile, platform, chat_type, chat_id, created_at, updated_at, parent_session_id, lineage_id)
+            conn.execute(
+                """
+                INSERT INTO sessions
+                (id, profile, platform, chat_type, chat_id, created_at,
+                 updated_at, parent_session_id, lineage_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (session_id, self.profile, platform, chat_type, chat_id, now, now, parent_session_id, lineage))
+                """,
+                (
+                    session_id,
+                    self.profile,
+                    platform,
+                    chat_type,
+                    chat_id,
+                    now,
+                    now,
+                    parent_session_id,
+                    lineage,
+                ),
+            )
 
     def save_session(self, session_id: str, messages: list[dict]) -> None:
         """Save conversation history to session."""
@@ -179,13 +212,28 @@ class SessionStore:
 
         with self._transaction() as conn:
             # Upsert session
-            conn.execute("""
-                INSERT INTO sessions (id, profile, platform, chat_type, chat_id, created_at, updated_at, lineage_id, message_count)
+            conn.execute(
+                """
+                INSERT INTO sessions
+                (id, profile, platform, chat_type, chat_id, created_at,
+                 updated_at, lineage_id, message_count)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     updated_at = excluded.updated_at,
                     message_count = excluded.message_count
-            """, (session_id, self.profile, "cli", "private", "local", now, now, session_id, len(messages)))
+                """,
+                (
+                    session_id,
+                    self.profile,
+                    "cli",
+                    "private",
+                    "local",
+                    now,
+                    now,
+                    session_id,
+                    len(messages),
+                ),
+            )
 
             # Clear existing messages for this session
             conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
@@ -196,28 +244,35 @@ class SessionStore:
                 if isinstance(content, list):
                     content = json.dumps(content)
 
-                conn.execute("""
-                    INSERT INTO messages (session_id, role, content, tool_call_id, display_kind, row_id, created_at)
+                conn.execute(
+                    """
+                    INSERT INTO messages
+                    (session_id, role, content, tool_call_id, display_kind, row_id, created_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    session_id,
-                    msg.get("role", "user"),
-                    content,
-                    msg.get("tool_call_id"),
-                    msg.get("display_kind"),
-                    row_id,
-                    now,
-                ))
+                    """,
+                    (
+                        session_id,
+                        msg.get("role", "user"),
+                        content,
+                        msg.get("tool_call_id"),
+                        msg.get("display_kind"),
+                        row_id,
+                        now,
+                    ),
+                )
 
     def load_session(self, session_id: str) -> list[dict] | None:
         """Load conversation history from session."""
         with self._transaction() as conn:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT role, content, tool_call_id, display_kind, row_id
                 FROM messages
                 WHERE session_id = ?
                 ORDER BY row_id ASC
-            """, (session_id,))
+            """,
+                (session_id,),
+            )
 
             messages = []
             for row in cursor:
@@ -253,25 +308,32 @@ class SessionStore:
     def list_sessions(self, limit: int = 50) -> list[dict]:
         """List recent sessions for this profile."""
         with self._transaction() as conn:
-            cursor = conn.execute("""
-                SELECT id, platform, chat_type, chat_id, created_at, updated_at, message_count, token_count
+            cursor = conn.execute(
+                """
+                SELECT id, platform, chat_type, chat_id, created_at,
+                       updated_at, message_count, token_count
                 FROM sessions
                 WHERE profile = ?
                 ORDER BY updated_at DESC
                 LIMIT ?
-            """, (self.profile, limit))
+                """,
+                (self.profile, limit),
+            )
 
             return [dict(row) for row in cursor]
 
     def get_session_info(self, session_id: str) -> dict | None:
         """Get session metadata."""
         with self._transaction() as conn:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT id, profile, platform, chat_type, chat_id, created_at, updated_at,
                        parent_session_id, lineage_id, message_count, token_count
                 FROM sessions
                 WHERE id = ?
-            """, (session_id,))
+            """,
+                (session_id,),
+            )
 
             row = cursor.fetchone()
             return dict(row) if row else None
@@ -283,7 +345,8 @@ class SessionStore:
     def search_messages(self, query: str, limit: int = 20) -> list[dict]:
         """Full-text search across all sessions."""
         with self._transaction() as conn:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT m.session_id, m.role, m.content, m.row_id, s.updated_at
                 FROM messages_fts fts
                 JOIN messages m ON m.id = fts.rowid
@@ -291,7 +354,9 @@ class SessionStore:
                 WHERE fts.content MATCH ? AND s.profile = ?
                 ORDER BY s.updated_at DESC
                 LIMIT ?
-            """, (query, self.profile, limit))
+            """,
+                (query, self.profile, limit),
+            )
 
             return [dict(row) for row in cursor]
 
@@ -302,24 +367,30 @@ class SessionStore:
     def get_lineage(self, lineage_id: str) -> list[dict]:
         """Get all sessions in a lineage (parent -> children)."""
         with self._transaction() as conn:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT id, parent_session_id, created_at, updated_at, message_count
                 FROM sessions
                 WHERE lineage_id = ?
                 ORDER BY created_at ASC
-            """, (lineage_id,))
+            """,
+                (lineage_id,),
+            )
 
             return [dict(row) for row in cursor]
 
     def get_children(self, parent_session_id: str) -> list[dict]:
         """Get child sessions (from compression)."""
         with self._transaction() as conn:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT id, created_at, updated_at, message_count
                 FROM sessions
                 WHERE parent_session_id = ?
                 ORDER BY created_at ASC
-            """, (parent_session_id,))
+            """,
+                (parent_session_id,),
+            )
 
             return [dict(row) for row in cursor]
 
@@ -335,10 +406,16 @@ class SessionStore:
     def get_stats(self) -> dict:
         """Get database statistics."""
         with self._transaction() as conn:
-            cursor = conn.execute("SELECT COUNT(*) as count FROM sessions WHERE profile = ?", (self.profile,))
+            cursor = conn.execute(
+                "SELECT COUNT(*) as count FROM sessions WHERE profile = ?", (self.profile,)
+            )
             session_count = cursor.fetchone()["count"]
 
-            cursor = conn.execute("SELECT COUNT(*) as count FROM messages WHERE session_id IN (SELECT id FROM sessions WHERE profile = ?)", (self.profile,))
+            cursor = conn.execute(
+                "SELECT COUNT(*) as count FROM messages "
+                "WHERE session_id IN (SELECT id FROM sessions WHERE profile = ?)",
+                (self.profile,),
+            )
             message_count = cursor.fetchone()["count"]
 
             # Database size
@@ -362,6 +439,7 @@ class SessionStore:
 # =============================================================================
 # Convenience Functions
 # =============================================================================
+
 
 def build_session_key(profile: str, platform: str, chat_type: str, chat_id: str) -> str:
     """Build standardized session key."""

@@ -14,26 +14,61 @@ from enaya.tools.registry import registry
 # Browser CDP Tool
 # =============================================================================
 
+
 BROWSER_CDP_SCHEMA = {
     "type": "function",
     "function": {
         "name": "browser_cdp",
-        "description": "Control browser via Chrome DevTools Protocol (CDP). Allows fine-grained control over browser internals, network interception, console logs, etc.",
+        "description": (
+            "Control browser via Chrome DevTools Protocol (CDP). Allows "
+            "fine-grained control over browser internals, network interception, "
+            "console logs, etc."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["connect", "navigate", "evaluate", "click", "type", "screenshot", "network_logs", "console_logs", "dom_snapshot", "close"],
-                    "description": "Action to perform"
+                    "enum": [
+                        "connect",
+                        "navigate",
+                        "evaluate",
+                        "click",
+                        "type",
+                        "screenshot",
+                        "network_logs",
+                        "console_logs",
+                        "dom_snapshot",
+                        "close",
+                    ],
+                    "description": "Action to perform",
                 },
                 "url": {"type": "string", "description": "URL to navigate to"},
-                "selector": {"type": "string", "description": "CSS selector for element interactions"},
+                "selector": {
+                    "type": "string",
+                    "description": "CSS selector for element interactions",
+                },
                 "text": {"type": "string", "description": "Text to type"},
                 "script": {"type": "string", "description": "JavaScript to evaluate"},
-                "cdp_endpoint": {"type": "string", "description": "CDP WebSocket endpoint (e.g., ws://localhost:9222/devtools/browser/...)"},
-                "headless": {"type": "boolean", "description": "Run in headless mode", "default": True},
-                "viewport": {"type": "object", "properties": {"width": {"type": "integer"}, "height": {"type": "integer"}}, "description": "Viewport dimensions"},
+                "cdp_endpoint": {
+                    "type": "string",
+                    "description": (
+                        "CDP WebSocket endpoint (e.g., ws://localhost:9222/devtools/browser/...)"
+                    ),
+                },
+                "headless": {
+                    "type": "boolean",
+                    "description": "Run in headless mode",
+                    "default": True,
+                },
+                "viewport": {
+                    "type": "object",
+                    "properties": {
+                        "width": {"type": "integer"},
+                        "height": {"type": "integer"},
+                    },
+                    "description": "Viewport dimensions",
+                },
             },
             "required": ["action"],
         },
@@ -44,7 +79,8 @@ BROWSER_CDP_SCHEMA = {
 def check_browser_cdp_requirements() -> bool:
     """Check if browser CDP requirements are met."""
     try:
-        import playwright
+        import playwright  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -60,7 +96,9 @@ class BrowserCDPManager:
         self._cdp_session = None
         self._playwright = None
 
-    async def connect(self, cdp_endpoint: str = None, headless: bool = True, viewport: dict = None) -> dict:
+    async def connect(
+        self, cdp_endpoint: str = None, headless: bool = True, viewport: dict = None
+    ) -> dict:
         """Connect to browser via CDP."""
         try:
             from playwright.async_api import async_playwright
@@ -74,7 +112,11 @@ class BrowserCDPManager:
                 # Launch new browser with CDP enabled
                 self._browser = await self._playwright.chromium.launch(
                     headless=headless,
-                    args=["--remote-debugging-port=9222", "--no-sandbox", "--disable-dev-shm-usage"]
+                    args=[
+                        "--remote-debugging-port=9222",
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                    ],
                 )
 
             self._context = await self._browser.new_context(
@@ -91,7 +133,7 @@ class BrowserCDPManager:
             return {
                 "success": True,
                 "cdp_endpoint": cdp_url,
-                "message": "Connected to browser via CDP"
+                "message": "Connected to browser via CDP",
             }
 
         except Exception as e:
@@ -152,6 +194,7 @@ class BrowserCDPManager:
                 return {"success": True, "path": path}
             else:
                 import base64
+
                 return {"success": True, "screenshot_base64": base64.b64encode(screenshot).decode()}
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -167,7 +210,10 @@ class BrowserCDPManager:
 
             # Get request/response data
             # Note: This is simplified - real implementation would collect events
-            return {"success": True, "message": "Network logging enabled. Use CDP events for full logs."}
+            return {
+                "success": True,
+                "message": ("Network logging enabled. Use CDP events for full logs."),
+            }
         except Exception as e:
             return {"success": False, "error": str(e)}
 
@@ -179,7 +225,10 @@ class BrowserCDPManager:
 
             # Enable console domain
             await self._cdp_session.send("Console.enable")
-            return {"success": True, "message": "Console logging enabled. Use CDP events for full logs."}
+            return {
+                "success": True,
+                "message": ("Console logging enabled. Use CDP events for full logs."),
+            }
         except Exception as e:
             return {"success": False, "error": str(e)}
 
@@ -191,7 +240,9 @@ class BrowserCDPManager:
 
             # Get DOM tree via CDP
             if self._cdp_session:
-                result = await self._cdp_session.send("DOM.getDocument", {"depth": -1, "pierce": True})
+                result = await self._cdp_session.send(
+                    "DOM.getDocument", {"depth": -1, "pierce": True}
+                )
                 return {"success": True, "dom": result}
             else:
                 # Fallback to page content
@@ -293,15 +344,6 @@ async def browser_cdp_tool(
 
     except Exception as e:
         return json.dumps({"error": str(e)})
-
-
-def check_browser_cdp_requirements() -> bool:
-    """Check if browser CDP requirements are met."""
-    try:
-        import playwright
-        return True
-    except ImportError:
-        return False
 
 
 registry.register(

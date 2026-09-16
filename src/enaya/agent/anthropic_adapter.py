@@ -46,30 +46,34 @@ def anthropic_messages_call(
             if msg.get("tool_calls"):
                 # Assistant with tool calls
                 for tc in msg["tool_calls"]:
-                    anthropic_messages.append({
-                        "role": "assistant",
-                        "content": [
-                            {
-                                "type": "tool_use",
-                                "id": tc["id"],
-                                "name": tc["function"]["name"],
-                                "input": json.loads(tc["function"]["arguments"]),
-                            }
-                        ],
-                    })
+                    anthropic_messages.append(
+                        {
+                            "role": "assistant",
+                            "content": [
+                                {
+                                    "type": "tool_use",
+                                    "id": tc["id"],
+                                    "name": tc["function"]["name"],
+                                    "input": json.loads(tc["function"]["arguments"]),
+                                }
+                            ],
+                        }
+                    )
             else:
                 anthropic_messages.append({"role": "assistant", "content": content})
         elif role == "tool":
-            anthropic_messages.append({
-                "role": "user",
-                "content": [
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": msg["tool_call_id"],
-                        "content": content,
-                    }
-                ],
-            })
+            anthropic_messages.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": msg["tool_call_id"],
+                            "content": content,
+                        }
+                    ],
+                }
+            )
 
     # Build request
     kwargs = {
@@ -84,7 +88,9 @@ def anthropic_messages_call(
         kwargs["system"] = system_prompt.strip()
 
     # Add tools if available
-    tool_schemas = collect_anthropic_tool_schemas(agent.config.toolsets, agent.config.disabled_tools)
+    tool_schemas = collect_anthropic_tool_schemas(
+        agent.config.toolsets, agent.config.disabled_tools
+    )
     if tool_schemas:
         kwargs["tools"] = tool_schemas
 
@@ -106,11 +112,15 @@ def collect_anthropic_tool_schemas(toolsets: list[str], disabled_tools: list[str
             tool = registry.get(name)
             if tool and tool.check_fn():
                 fn_schema = tool.schema.get("function", {})
-                schemas.append({
-                    "name": fn_schema.get("name"),
-                    "description": fn_schema.get("description"),
-                    "input_schema": fn_schema.get("parameters", {"type": "object", "properties": {}}),
-                })
+                schemas.append(
+                    {
+                        "name": fn_schema.get("name"),
+                        "description": fn_schema.get("description"),
+                        "input_schema": fn_schema.get(
+                            "parameters", {"type": "object", "properties": {}}
+                        ),
+                    }
+                )
     return schemas
 
 
@@ -124,14 +134,16 @@ def _non_stream_anthropic(client, kwargs: dict) -> dict:
         if block.type == "text":
             result["content"] += block.text
         elif block.type == "tool_use":
-            result["tool_calls"].append({
-                "id": block.id,
-                "type": "function",
-                "function": {
-                    "name": block.name,
-                    "arguments": json.dumps(block.input),
-                },
-            })
+            result["tool_calls"].append(
+                {
+                    "id": block.id,
+                    "type": "function",
+                    "function": {
+                        "name": block.name,
+                        "arguments": json.dumps(block.input),
+                    },
+                }
+            )
 
     result["usage"] = {
         "prompt_tokens": response.usage.input_tokens,
@@ -153,6 +165,7 @@ def _stream_anthropic(client, kwargs: dict) -> dict:
 # Prompt Caching Helpers
 # =============================================================================
 
+
 def apply_anthropic_caching(messages: list[dict], cache_ttl: str = "5m") -> list[dict]:
     """Apply Anthropic cache_control markers."""
     # Anthropic uses cache_control on content blocks
@@ -163,7 +176,11 @@ def apply_anthropic_caching(messages: list[dict], cache_ttl: str = "5m") -> list
         content = messages[0]["content"]
         if isinstance(content, str):
             messages[0]["content"] = [
-                {"type": "text", "text": content, "cache_control": {"type": "ephemeral", "ttl": cache_ttl}}
+                {
+                    "type": "text",
+                    "text": content,
+                    "cache_control": {"type": "ephemeral", "ttl": cache_ttl},
+                }
             ]
 
     # Last 3 non-system messages
@@ -173,7 +190,11 @@ def apply_anthropic_caching(messages: list[dict], cache_ttl: str = "5m") -> list
             content = messages[msg_idx]["content"]
             if isinstance(content, str):
                 messages[msg_idx]["content"] = [
-                    {"type": "text", "text": content, "cache_control": {"type": "ephemeral", "ttl": cache_ttl}}
+                    {
+                        "type": "text",
+                        "text": content,
+                        "cache_control": {"type": "ephemeral", "ttl": cache_ttl},
+                    }
                 ]
 
     return messages

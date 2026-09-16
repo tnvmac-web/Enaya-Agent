@@ -18,9 +18,11 @@ class WhatsAppAdapter:
         self.runner = runner
         self.phone_number = os.environ.get("WHATSAPP_PHONE_NUMBER")
         self.session_path = os.environ.get("WHATSAPP_SESSION_PATH", "./whatsapp_session")
-        self.allowed_users = set(
-            os.environ.get("WHATSAPP_ALLOWED_USERS", "").split(",")
-        ) if os.environ.get("WHATSAPP_ALLOWED_USERS") else set()
+        self.allowed_users = (
+            set(os.environ.get("WHATSAPP_ALLOWED_USERS", "").split(","))
+            if os.environ.get("WHATSAPP_ALLOWED_USERS")
+            else set()
+        )
         self.allow_all = os.environ.get("WHATSAPP_ALLOW_ALL_USERS", "false").lower() == "true"
 
         self._socket = None
@@ -48,13 +50,15 @@ class WhatsAppAdapter:
         user_id = message.get("from", "").split("@")[0]
 
         if not self.authorize_user(user_id):
-            await self.send_message(message.get("from"), "❌ You are not authorized to use this bot.")
+            await self.send_message(
+                message.get("from"), "❌ You are not authorized to use this bot."
+            )
             return
 
         # Create message event
         msg_event = MessageEvent(
             platform="whatsapp",
-            chat_type="dm" if message.get("is_group") == False else "group",
+            chat_type="dm" if not message.get("is_group") else "group",
             chat_id=message.get("from", ""),
             user_id=user_id,
             username=message.get("notify_name", ""),

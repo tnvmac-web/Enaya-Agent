@@ -11,6 +11,7 @@ from enum import Enum
 
 class DelegationTrigger(Enum):
     """Conditions that trigger delegation."""
+
     COMPLEXITY_THRESHOLD = "complexity_threshold"
     DOMAIN_SPECIALIZATION = "domain_specialization"
     PARALLELIZABLE = "parallelizable"
@@ -21,6 +22,7 @@ class DelegationTrigger(Enum):
 @dataclass
 class DelegationPolicy:
     """Policy for when to delegate."""
+
     # Complexity thresholds
     max_single_agent_complexity: int = 7  # 1-10 scale
     max_estimated_tokens: int = 50000
@@ -45,11 +47,29 @@ class DelegationPolicy:
 
     def __post_init__(self):
         if self.research_domains is None:
-            self.research_domains = ["research", "analysis", "literature review", "market research", "academic"]
+            self.research_domains = [
+                "research",
+                "analysis",
+                "literature review",
+                "market research",
+                "academic",
+            ]
         if self.code_domains is None:
-            self.code_domains = ["coding", "debugging", "refactoring", "code review", "architecture"]
+            self.code_domains = [
+                "coding",
+                "debugging",
+                "refactoring",
+                "code review",
+                "architecture",
+            ]
         if self.planning_domains is None:
-            self.planning_domains = ["planning", "strategy", "roadmap", "decomposition", "scheduling"]
+            self.planning_domains = [
+                "planning",
+                "strategy",
+                "roadmap",
+                "decomposition",
+                "scheduling",
+            ]
 
 
 DEFAULT_DELEGATION_POLICY = DelegationPolicy()
@@ -78,33 +98,53 @@ def should_delegate(
     # Estimate complexity (simplified heuristic)
     complexity = _estimate_complexity(task, context)
     if complexity > policy.max_single_agent_complexity:
-        return True, f"complexity_threshold_exceeded ({complexity} > {policy.max_single_agent_complexity})", {
-            "suggested_max_iterations": 50,
-            "suggested_toolsets": _suggest_toolsets(task),
-        }
+        return (
+            True,
+            f"complexity_threshold_exceeded ({complexity} > {policy.max_single_agent_complexity})",
+            {
+                "suggested_max_iterations": 50,
+                "suggested_toolsets": _suggest_toolsets(task),
+            },
+        )
 
     # Check for parallelizable subtasks
     parallel_tasks = _count_parallelizable_subtasks(task)
     if parallel_tasks >= policy.min_parallel_tasks:
-        return True, f"parallelizable_subtasks ({parallel_tasks} >= {policy.min_parallel_tasks})", {
-            "suggested_max_iterations": 30,
-            "suggested_toolsets": ["core", "research"],
-        }
+        return (
+            True,
+            f"parallelizable_subtasks ({parallel_tasks} >= {policy.min_parallel_tasks})",
+            {
+                "suggested_max_iterations": 30,
+                "suggested_toolsets": ["core", "research"],
+            },
+        )
 
     # Check domain specialization
     domain = _detect_domain(task)
     if domain in policy.research_domains:
-        return True, f"research_domain ({domain})", {
-            "suggested_toolsets": ["core", "research", "synthesis"],
-        }
+        return (
+            True,
+            f"research_domain ({domain})",
+            {
+                "suggested_toolsets": ["core", "research", "synthesis"],
+            },
+        )
     if domain in policy.code_domains:
-        return True, f"code_domain ({domain})", {
-            "suggested_toolsets": ["core", "planning", "delegation"],
-        }
+        return (
+            True,
+            f"code_domain ({domain})",
+            {
+                "suggested_toolsets": ["core", "planning", "delegation"],
+            },
+        )
     if domain in policy.planning_domains:
-        return True, f"planning_domain ({domain})", {
-            "suggested_toolsets": ["core", "planning"],
-        }
+        return (
+            True,
+            f"planning_domain ({domain})",
+            {
+                "suggested_toolsets": ["core", "planning"],
+            },
+        )
 
     return False, "no_delegation_needed", {}
 
@@ -119,10 +159,26 @@ def _estimate_complexity(task: str, context: str) -> int:
 
     # Keywords indicating complexity
     complex_keywords = [
-        "multiple", "various", "several", "compare", "analyze", "research",
-        "investigate", "comprehensive", "thorough", "deep", "full",
-        "architecture", "system", "design", "implement", "build",
-        "integrate", "migrate", "refactor", "optimize",
+        "multiple",
+        "various",
+        "several",
+        "compare",
+        "analyze",
+        "research",
+        "investigate",
+        "comprehensive",
+        "thorough",
+        "deep",
+        "full",
+        "architecture",
+        "system",
+        "design",
+        "implement",
+        "build",
+        "integrate",
+        "migrate",
+        "refactor",
+        "optimize",
     ]
     for kw in complex_keywords:
         if kw in text:
@@ -144,11 +200,17 @@ def _count_parallelizable_subtasks(task: str) -> int:
 def _detect_domain(task: str) -> str:
     """Detect task domain."""
     text = task.lower()
-    if any(kw in text for kw in ["research", "paper", "academic", "literature", "study", "analyze"]):
+    if any(
+        kw in text for kw in ["research", "paper", "academic", "literature", "study", "analyze"]
+    ):
         return "research"
-    if any(kw in text for kw in ["code", "implement", "debug", "refactor", "function", "class", "api"]):
+    if any(
+        kw in text for kw in ["code", "implement", "debug", "refactor", "function", "class", "api"]
+    ):
         return "coding"
-    if any(kw in text for kw in ["plan", "strategy", "roadmap", "decompose", "schedule", "milestone"]):
+    if any(
+        kw in text for kw in ["plan", "strategy", "roadmap", "decompose", "schedule", "milestone"]
+    ):
         return "planning"
     return "general"
 

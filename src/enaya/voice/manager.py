@@ -17,9 +17,11 @@ from dataclasses import dataclass
 # Audio Data Classes
 # =============================================================================
 
+
 @dataclass
 class AudioChunk:
     """Audio data chunk."""
+
     data: bytes
     sample_rate: int
     channels: int
@@ -30,6 +32,7 @@ class AudioChunk:
 @dataclass
 class VoiceConfig:
     """Voice configuration."""
+
     sample_rate: int = 16000
     channels: int = 1
     sample_width: int = 2  # 16-bit
@@ -42,6 +45,7 @@ class VoiceConfig:
 # STT Providers (Abstract Base)
 # =============================================================================
 
+
 class STTProvider(ABC):
     """Speech-to-Text provider base class."""
 
@@ -51,7 +55,9 @@ class STTProvider(ABC):
         pass
 
     @abstractmethod
-    async def transcribe_stream(self, audio_stream: AsyncGenerator[bytes, None]) -> AsyncGenerator[str, None]:
+    async def transcribe_stream(
+        self, audio_stream: AsyncGenerator[bytes, None]
+    ) -> AsyncGenerator[str, None]:
         """Stream transcription."""
         pass
 
@@ -62,15 +68,17 @@ class LocalWhisperSTT(STTProvider):
     def __init__(self, model_size: str = "base", device: str = "cpu", compute_type: str = "int8"):
         try:
             from faster_whisper import WhisperModel
+
             self.model = WhisperModel(model_size, device=device, compute_type=compute_type)
         except ImportError:
             raise RuntimeError("faster-whisper not installed. Run: pip install faster-whisper")
 
     async def transcribe(self, audio: bytes, sample_rate: int = 16000) -> str:
         import io
+
         # Save to temporary WAV
         with io.BytesIO() as wav_io:
-            with wave.open(wav_io, 'wb') as wav_file:
+            with wave.open(wav_io, "wb") as wav_file:
                 wav_file.setnchannels(1)
                 wav_file.setsampwidth(2)
                 wav_file.setframerate(sample_rate)
@@ -80,7 +88,9 @@ class LocalWhisperSTT(STTProvider):
             segments, _ = self.model.transcribe(wav_io, language="en")
             return " ".join(seg.text for seg in segments)
 
-    async def transcribe_stream(self, audio_stream: AsyncGenerator[bytes, None]) -> AsyncGenerator[str, None]:
+    async def transcribe_stream(
+        self, audio_stream: AsyncGenerator[bytes, None]
+    ) -> AsyncGenerator[str, None]:
         # Simplified - collect and transcribe in chunks
         buffer = bytearray()
         async for chunk in audio_stream:
@@ -102,13 +112,15 @@ class GroqSTT(STTProvider):
 
     def __init__(self, api_key: str = None, model: str = "whisper-large-v3-turbo"):
         from groq import Groq
+
         self.client = Groq(api_key=api_key or os.environ.get("GROQ_API_KEY"))
         self.model = model
 
     async def transcribe(self, audio: bytes, sample_rate: int = 16000) -> str:
         import io
+
         with io.BytesIO() as wav_io:
-            with wave.open(wav_io, 'wb') as wav_file:
+            with wave.open(wav_io, "wb") as wav_file:
                 wav_file.setnchannels(1)
                 wav_file.setsampwidth(2)
                 wav_file.setframerate(sample_rate)
@@ -122,7 +134,9 @@ class GroqSTT(STTProvider):
             )
             return transcription.text
 
-    async def transcribe_stream(self, audio_stream: AsyncGenerator[bytes, None]) -> AsyncGenerator[str, None]:
+    async def transcribe_stream(
+        self, audio_stream: AsyncGenerator[bytes, None]
+    ) -> AsyncGenerator[str, None]:
         buffer = bytearray()
         async for chunk in audio_stream:
             buffer.extend(chunk)
@@ -142,6 +156,7 @@ class GroqSTT(STTProvider):
 # TTS Providers (Abstract Base)
 # =============================================================================
 
+
 class TTSProvider(ABC):
     """Text-to-Speech provider base class."""
 
@@ -151,7 +166,9 @@ class TTSProvider(ABC):
         pass
 
     @abstractmethod
-    async def synthesize_stream(self, text: str, voice: str = "default") -> AsyncGenerator[bytes, None]:
+    async def synthesize_stream(
+        self, text: str, voice: str = "default"
+    ) -> AsyncGenerator[bytes, None]:
         """Stream audio synthesis."""
         pass
 
@@ -161,6 +178,7 @@ class OpenAITTS(TTSProvider):
 
     def __init__(self, api_key: str = None, model: str = "tts-1", voice: str = "alloy"):
         from openai import OpenAI
+
         self.client = OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
         self.model = model
         self.default_voice = voice
@@ -189,8 +207,14 @@ class OpenAITTS(TTSProvider):
 class ElevenLabsTTS(TTSProvider):
     """ElevenLabs TTS provider."""
 
-    def __init__(self, api_key: str = None, voice_id: str = "21m00Tcm4TlvDq8ikWAM", model: str = "eleven_multilingual_v2"):
+    def __init__(
+        self,
+        api_key: str = None,
+        voice_id: str = "21m00Tcm4TlvDq8ikWAM",
+        model: str = "eleven_multilingual_v2",
+    ):
         from elevenlabs import ElevenLabs
+
         self.client = ElevenLabs(api_key=api_key or os.environ.get("ELEVENLABS_API_KEY"))
         self.voice_id = voice_id
         self.model = model
@@ -218,6 +242,7 @@ class ElevenLabsTTS(TTSProvider):
 # Voice Manager
 # =============================================================================
 
+
 class VoiceManager:
     """Manages voice conversations with STT/TTS."""
 
@@ -242,13 +267,13 @@ class VoiceManager:
             try:
                 # Use OpenAI Whisper
                 pass
-            except:
+            except Exception:
                 pass
 
         if not self.stt:
             try:
                 self.stt = LocalWhisperSTT()
-            except:
+            except Exception:
                 pass
 
         # TTS
@@ -285,6 +310,7 @@ class VoiceManager:
 # Voice Gateway Integration
 # =============================================================================
 
+
 class VoiceGateway:
     """Voice integration for gateway platforms."""
 
@@ -293,7 +319,9 @@ class VoiceGateway:
         self.voice = voice_manager
         self._active_calls: dict[str, asyncio.Task] = {}
 
-    async def handle_voice_message(self, platform: str, chat_id: str, user_id: str, audio_data: bytes) -> None:
+    async def handle_voice_message(
+        self, platform: str, chat_id: str, user_id: str, audio_data: bytes
+    ) -> None:
         """Handle incoming voice message."""
         if not self.voice.stt or not self.voice.tts:
             # Send error message
@@ -306,7 +334,8 @@ class VoiceGateway:
 
         # Create message event
         from enaya.gateway.runner import MessageEvent
-        event = MessageEvent(
+
+        MessageEvent(
             platform=platform,
             chat_type="voice",
             chat_id=chat_id,
@@ -328,13 +357,14 @@ class VoiceGateway:
 
         # Platform-specific voice sending
         adapter = self.runner._adapters.get(platform)
-        if adapter and hasattr(adapter, 'send_voice'):
+        if adapter and hasattr(adapter, "send_voice"):
             await adapter.send_voice(chat_id, audio)
 
 
 # =============================================================================
 # Wake Word Detection
 # =============================================================================
+
 
 class WakeWordDetector:
     """Wake word detection for 'Hey Enaya'."""

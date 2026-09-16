@@ -25,6 +25,7 @@ from enaya.run_agent import AIAgent, create_agent
 # Request/Response Models (OpenAI-Compatible)
 # =============================================================================
 
+
 class Message(BaseModel):
     role: str
     content: str | list[dict] = ""
@@ -118,6 +119,7 @@ class CapabilitiesResponse(BaseModel):
 # Global State
 # =============================================================================
 
+
 @dataclass
 class APIServerState:
     agents: dict[str, AIAgent] = field(default_factory=dict)
@@ -130,6 +132,7 @@ state = APIServerState()
 # =============================================================================
 # FastAPI App
 # =============================================================================
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -184,6 +187,7 @@ def get_agent(model: str | None = None) -> AIAgent:
 # Health Endpoints
 # =============================================================================
 
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "enaya-agent"}
@@ -206,12 +210,19 @@ async def health_detailed():
 # Model Endpoints
 # =============================================================================
 
+
 @app.get("/v1/models", response_model=ModelsResponse)
 async def list_models():
     """List available models (OpenAI-compatible)."""
     models = [
-        ModelInfo(id="openrouter:nvidia/nemotron-3-ultra-550b-a55b:free", created=1700000000, owned_by="enaya"),
-        ModelInfo(id="openrouter:anthropic/claude-3.5-sonnet", created=1700000000, owned_by="enaya"),
+        ModelInfo(
+            id="openrouter:nvidia/nemotron-3-ultra-550b-a55b:free",
+            created=1700000000,
+            owned_by="enaya",
+        ),
+        ModelInfo(
+            id="openrouter:anthropic/claude-3.5-sonnet", created=1700000000, owned_by="enaya"
+        ),
         ModelInfo(id="openrouter:openai/gpt-4o", created=1700000000, owned_by="enaya"),
         ModelInfo(id="openrouter:google/gemini-1.5-pro", created=1700000000, owned_by="enaya"),
     ]
@@ -227,7 +238,10 @@ async def model_options():
                 "id": "openrouter",
                 "name": "OpenRouter",
                 "models": [
-                    {"id": "nvidia/nemotron-3-ultra-550b-a55b:free", "name": "Nemotron 3 Ultra (free)"},
+                    {
+                        "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+                        "name": "Nemotron 3 Ultra (free)",
+                    },
                     {"id": "anthropic/claude-3.5-sonnet", "name": "Claude 3.5 Sonnet"},
                     {"id": "openai/gpt-4o", "name": "GPT-4o"},
                     {"id": "google/gemini-1.5-pro", "name": "Gemini 1.5 Pro"},
@@ -248,6 +262,7 @@ async def capabilities():
 # Chat Completions
 # =============================================================================
 
+
 @app.post("/v1/chat/completions")
 async def chat_completions(request: ChatCompletionRequest):
     """OpenAI Chat Completions endpoint."""
@@ -266,7 +281,9 @@ async def chat_completions(request: ChatCompletionRequest):
         return _format_chat_response(result, request.model)
 
 
-async def _stream_chat_completions(agent: AIAgent, prompt: str, model: str) -> AsyncGenerator[str, None]:
+async def _stream_chat_completions(
+    agent: AIAgent, prompt: str, model: str
+) -> AsyncGenerator[str, None]:
     """Stream chat completions."""
     run_id = f"chatcmpl-{uuid.uuid4().hex[:8]}"
     created = int(asyncio.get_event_loop().time())
@@ -287,15 +304,17 @@ async def _stream_chat_completions(agent: AIAgent, prompt: str, model: str) -> A
     # Stream in chunks
     chunk_size = 50
     for i in range(0, len(result), chunk_size):
-        chunk_text = result[i:i+chunk_size]
+        chunk_text = result[i : i + chunk_size]
         chunk = ChatCompletionStreamResponse(
             id=run_id,
             created=created,
             model=model,
-            choices=[ChatCompletionStreamChoice(
-                index=0,
-                delta=Message(content=chunk_text),
-            )],
+            choices=[
+                ChatCompletionStreamChoice(
+                    index=0,
+                    delta=Message(content=chunk_text),
+                )
+            ],
         )
         yield f"data: {chunk.model_dump_json()}\n\n"
         await asyncio.sleep(0.01)
@@ -305,11 +324,13 @@ async def _stream_chat_completions(agent: AIAgent, prompt: str, model: str) -> A
         id=run_id,
         created=created,
         model=model,
-        choices=[ChatCompletionStreamChoice(
-            index=0,
-            delta=Message(content=""),
-            finish_reason="stop",
-        )],
+        choices=[
+            ChatCompletionStreamChoice(
+                index=0,
+                delta=Message(content=""),
+                finish_reason="stop",
+            )
+        ],
     )
     yield f"data: {final_chunk.model_dump_json()}\n\n"
     yield "data: [DONE]\n\n"
@@ -334,11 +355,13 @@ def _format_chat_response(content: str, model: str) -> ChatCompletionResponse:
         id=f"chatcmpl-{uuid.uuid4().hex[:8]}",
         created=int(asyncio.get_event_loop().time()),
         model=model,
-        choices=[ChatCompletionChoice(
-            index=0,
-            message=Message(role="assistant", content=content),
-            finish_reason="stop",
-        )],
+        choices=[
+            ChatCompletionChoice(
+                index=0,
+                message=Message(role="assistant", content=content),
+                finish_reason="stop",
+            )
+        ],
         usage={
             "prompt_tokens": 0,
             "completion_tokens": 0,
@@ -350,6 +373,7 @@ def _format_chat_response(content: str, model: str) -> ChatCompletionResponse:
 # =============================================================================
 # Runs Endpoints (Stateful)
 # =============================================================================
+
 
 @app.post("/v1/runs", response_model=RunResponse)
 async def create_run(request: RunRequest):
@@ -419,9 +443,19 @@ async def run_events(run_id: str):
                 break
 
         if run["status"] == "completed":
-            yield f"data: {json.dumps({'type': 'run.completed', 'run_id': run_id, 'result': run['result']})}\n\n"
+            completed_data = {
+                "type": "run.completed",
+                "run_id": run_id,
+                "result": run["result"],
+            }
+            yield f"data: {json.dumps(completed_data)}\n\n"
         elif run["status"] == "failed":
-            yield f"data: {json.dumps({'type': 'run.failed', 'run_id': run_id, 'error': run.get('error')})}\n\n"
+            failed_data = {
+                "type": "run.failed",
+                "run_id": run_id,
+                "error": run.get("error"),
+            }
+            yield f"data: {json.dumps(failed_data)}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -455,6 +489,7 @@ async def steer_run(run_id: str, request: Request):
 # Browser Control (Stub)
 # =============================================================================
 
+
 @app.post("/v1/browser-control/register")
 async def register_browser_control(request: Request):
     """Register a browser controller."""
@@ -465,9 +500,11 @@ async def register_browser_control(request: Request):
 # Run Server
 # =============================================================================
 
+
 def run_api_server(host: str = "0.0.0.0", port: int = 8000):
     """Run the API server."""
     import uvicorn
+
     uvicorn.run(app, host=host, port=port)
 
 

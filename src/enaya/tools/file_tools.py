@@ -20,13 +20,26 @@ READ_FILE_SCHEMA = {
     "type": "function",
     "function": {
         "name": "read_file",
-        "description": "Read a text file with line numbers and pagination. Use this instead of cat/head/tail.",
+        "description": (
+            "Read a text file with line numbers and pagination. Use this instead of cat/head/tail."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
-                "path": {"type": "string", "description": "Path to the file to read (absolute, relative, or ~/path)"},
-                "offset": {"type": "integer", "description": "Line number to start reading from (1-indexed, default: 1)", "default": 1},
-                "limit": {"type": "integer", "description": "Maximum number of lines to read (default: 2000, max: 2000)", "default": 2000},
+                "path": {
+                    "type": "string",
+                    "description": ("Path to the file to read (absolute, relative, or ~/path)"),
+                },
+                "offset": {
+                    "type": "integer",
+                    "description": "Line number to start reading from (1-indexed, default: 1)",
+                    "default": 1,
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Maximum number of lines to read (default: 2000, max: 2000)",
+                    "default": 2000,
+                },
             },
             "required": ["path"],
         },
@@ -65,11 +78,13 @@ def read_file_tool(path: str, offset: int = 1, limit: int = 2000) -> str:
         for i, line in enumerate(selected_lines, start=start + 1):
             result_lines.append(f"{i}|{line}")
 
-        return json.dumps({
-            "content": "\n".join(result_lines),
-            "total_lines": len(lines),
-            "showing_lines": f"{start + 1}-{end}",
-        })
+        return json.dumps(
+            {
+                "content": "\n".join(result_lines),
+                "total_lines": len(lines),
+                "showing_lines": f"{start + 1}-{end}",
+            }
+        )
 
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -92,12 +107,24 @@ WRITE_FILE_SCHEMA = {
     "type": "function",
     "function": {
         "name": "write_file",
-        "description": "Write content to a file, completely replacing existing content. Creates parent directories automatically.",
+        "description": (
+            "Write content to a file, completely replacing existing content. "
+            "Creates parent directories automatically."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
-                "path": {"type": "string", "description": "Path to the file to write (will be created if it doesn't exist, overwritten if it does)"},
-                "content": {"type": "string", "description": "Complete content to write to the file"},
+                "path": {
+                    "type": "string",
+                    "description": (
+                        "Path to the file to write (will be created if it "
+                        "doesn't exist, overwritten if it does)"
+                    ),
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Complete content to write to the file",
+                },
             },
             "required": ["path", "content"],
         },
@@ -121,11 +148,13 @@ def write_file_tool(path: str, content: str) -> str:
         # Write file
         file_path.write_text(content, encoding="utf-8")
 
-        return json.dumps({
-            "success": True,
-            "path": str(file_path),
-            "bytes_written": len(content.encode("utf-8")),
-        })
+        return json.dumps(
+            {
+                "success": True,
+                "path": str(file_path),
+                "bytes_written": len(content.encode("utf-8")),
+            }
+        )
 
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -148,14 +177,38 @@ PATCH_SCHEMA = {
     "type": "function",
     "function": {
         "name": "patch",
-        "description": "Targeted find-and-replace edits in files. Uses fuzzy matching so minor whitespace/indentation differences won't break it.",
+        "description": (
+            "Targeted find-and-replace edits in files. Uses fuzzy matching so "
+            "minor whitespace/indentation differences won't break it."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
                 "path": {"type": "string", "description": "File path to edit"},
-                "old_string": {"type": "string", "description": "Exact text to find and replace. Must be unique in the file. Include surrounding context lines to ensure uniqueness."},
-                "new_string": {"type": "string", "description": "Changed replacement text; it must differ from old_string. Pass empty string '' to delete the matched text."},
-                "replace_all": {"type": "boolean", "description": "Replace all occurrences instead of requiring a unique match (default: false)", "default": False},
+                "old_string": {
+                    "type": "string",
+                    "description": (
+                        "Exact text to find and replace. Must be unique in the "
+                        "file. Include surrounding context lines to ensure "
+                        "uniqueness."
+                    ),
+                },
+                "new_string": {
+                    "type": "string",
+                    "description": (
+                        "Changed replacement text; it must differ from "
+                        "old_string. Pass empty string '' to delete the "
+                        "matched text."
+                    ),
+                },
+                "replace_all": {
+                    "type": "boolean",
+                    "description": (
+                        "Replace all occurrences instead of requiring a unique "
+                        "match (default: false)"
+                    ),
+                    "default": False,
+                },
             },
             "required": ["path", "old_string", "new_string"],
         },
@@ -189,15 +242,24 @@ def patch_tool(path: str, old_string: str, new_string: str, replace_all: bool = 
             if count == 0:
                 return json.dumps({"error": "old_string not found in file"})
             if count > 1:
-                return json.dumps({"error": f"old_string found {count} times. Use replace_all=true or provide more context."})
+                return json.dumps(
+                    {
+                        "error": (
+                            f"old_string found {count} times. Use "
+                            "replace_all=true or provide more context."
+                        )
+                    }
+                )
             new_content = content.replace(old_string, new_string, 1)
 
         file_path.write_text(new_content, encoding="utf-8")
 
-        return json.dumps({
-            "success": True,
-            "replacements": count,
-        })
+        return json.dumps(
+            {
+                "success": True,
+                "replacements": count,
+            }
+        )
 
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -220,18 +282,69 @@ SEARCH_FILES_SCHEMA = {
     "type": "function",
     "function": {
         "name": "search_files",
-        "description": "Search file contents or find files by name. Ripgrep-backed, faster than shell equivalents.",
+        "description": (
+            "Search file contents or find files by name. Ripgrep-backed, "
+            "faster than shell equivalents."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
-                "pattern": {"type": "string", "description": "Regex pattern for content search, or glob pattern for file search"},
-                "target": {"type": "string", "enum": ["content", "files"], "description": "'content' searches inside file contents, 'files' searches for files by name", "default": "content"},
-                "path": {"type": "string", "description": "Directory or file to search in (default: current working directory)", "default": "."},
-                "file_glob": {"type": "string", "description": "Filter files by pattern in grep mode (e.g., '*.py' to only search Python files)"},
-                "limit": {"type": "integer", "description": "Maximum number of results to return (default: 50)", "default": 50},
-                "offset": {"type": "integer", "description": "Skip first N results for pagination (default: 0)", "default": 0},
-                "output_mode": {"type": "string", "enum": ["content", "files_only", "count"], "description": "Output format for grep mode: 'content' shows matching lines with line numbers, 'files_only' lists file paths, 'count' shows match counts per file", "default": "content"},
-                "context": {"type": "integer", "description": "Number of context lines before and after each match (grep mode only)", "default": 0},
+                "pattern": {
+                    "type": "string",
+                    "description": (
+                        "Regex pattern for content search, or glob pattern for file search"
+                    ),
+                },
+                "target": {
+                    "type": "string",
+                    "enum": ["content", "files"],
+                    "description": (
+                        "'content' searches inside file contents, 'files' "
+                        "searches for files by name"
+                    ),
+                    "default": "content",
+                },
+                "path": {
+                    "type": "string",
+                    "description": (
+                        "Directory or file to search in (default: current working directory)"
+                    ),
+                    "default": ".",
+                },
+                "file_glob": {
+                    "type": "string",
+                    "description": (
+                        "Filter files by pattern in grep mode "
+                        "(e.g., '*.py' to only search Python files)"
+                    ),
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Maximum number of results to return (default: 50)",
+                    "default": 50,
+                },
+                "offset": {
+                    "type": "integer",
+                    "description": "Skip first N results for pagination (default: 0)",
+                    "default": 0,
+                },
+                "output_mode": {
+                    "type": "string",
+                    "enum": ["content", "files_only", "count"],
+                    "description": (
+                        "Output format for grep mode: 'content' shows matching "
+                        "lines with line numbers, 'files_only' lists file paths, "
+                        "'count' shows match counts per file"
+                    ),
+                    "default": "content",
+                },
+                "context": {
+                    "type": "integer",
+                    "description": (
+                        "Number of context lines before and after each match (grep mode only)"
+                    ),
+                    "default": 0,
+                },
             },
             "required": ["pattern"],
         },
@@ -289,22 +402,25 @@ def search_files_tool(
                 data = json.loads(line)
                 if data["type"] == "match":
                     match_data = data["data"]
-                    matches.append({
-                        "path": match_data["path"]["text"],
-                        "line_number": match_data["line_number"],
-                        "lines": match_data["lines"]["text"],
-                    })
+                    matches.append(
+                        {
+                            "path": match_data["path"]["text"],
+                            "line_number": match_data["line_number"],
+                            "lines": match_data["lines"]["text"],
+                        }
+                    )
             except json.JSONDecodeError:
                 continue
 
         # Apply offset and limit
-        matches = matches[offset:offset + limit]
+        matches = matches[offset : offset + limit]
 
         if output_mode == "files_only":
-            files = list(set(m["path"] for m in matches))
+            files = list({m["path"] for m in matches})
             return json.dumps({"matches": files, "count": len(files)})
         elif output_mode == "count":
             from collections import Counter
+
             counts = Counter(m["path"] for m in matches)
             return json.dumps({"counts": dict(counts)})
         else:

@@ -21,9 +21,11 @@ class SlackAdapter:
         self.runner = runner
         self.bot_token = os.environ.get("SLACK_BOT_TOKEN")
         self.app_token = os.environ.get("SLACK_APP_TOKEN")
-        self.allowed_users = set(
-            os.environ.get("SLACK_ALLOWED_USERS", "").split(",")
-        ) if os.environ.get("SLACK_ALLOWED_USERS") else set()
+        self.allowed_users = (
+            set(os.environ.get("SLACK_ALLOWED_USERS", "").split(","))
+            if os.environ.get("SLACK_ALLOWED_USERS")
+            else set()
+        )
         self.allow_all = os.environ.get("SLACK_ALLOW_ALL_USERS", "false").lower() == "true"
 
         self.app: AsyncApp | None = None
@@ -113,14 +115,16 @@ class SlackAdapter:
     # Commands
     async def _cmd_help(self, ack: callable, say: callable) -> None:
         await ack()
-        await say(text=(
-            "👋 *Enaya Agent Commands*\n\n"
-            "*/help* - Show this help\n"
-            "*/delegate <task>* - Delegate a complex task to a subagent\n"
-            "*/model* - Show current model\n"
-            "*/new* - Start new session\n"
-            "*/status* - Show session status"
-        ))
+        await say(
+            text=(
+                "👋 *Enaya Agent Commands*\n\n"
+                "*/help* - Show this help\n"
+                "*/delegate <task>* - Delegate a complex task to a subagent\n"
+                "*/model* - Show current model\n"
+                "*/new* - Start new session\n"
+                "*/status* - Show session status"
+            )
+        )
 
     async def _cmd_delegate(self, ack: callable, say: callable, command: dict) -> None:
         await ack()

@@ -14,6 +14,7 @@ from enaya.delegation.orchestrator import DelegationOrchestrator
 @dataclass
 class AggregatedResult:
     """Aggregated result from multiple subagents."""
+
     query: str
     subagent_results: list[dict] = field(default_factory=list)
     synthesis: str | None = None
@@ -64,10 +65,15 @@ class ResultAggregator:
                 # Check for contradictions (simplified)
                 contents = [r.get("result", "") for r in topic_results]
                 if len(set(contents)) > 1:
-                    conflicts.append({
-                        "topic": topic,
-                        "positions": [{"subagent_id": r["subagent_id"], "summary": c[:200]} for r, c in zip(topic_results, contents)],
-                    })
+                    conflicts.append(
+                        {
+                            "topic": topic,
+                            "positions": [
+                                {"subagent_id": r["subagent_id"], "summary": c[:200]}
+                                for r, c in zip(topic_results, contents)
+                            ],
+                        }
+                    )
 
         return conflicts
 
@@ -85,7 +91,9 @@ class ResultAggregator:
         conflicts = self.detect_conflicts(unique_results)
 
         # Build synthesis prompt (for LLM)
-        synthesis_prompt = self._build_synthesis_prompt(query, unique_results, conflicts, conflict_resolution)
+        synthesis_prompt = self._build_synthesis_prompt(
+            query, unique_results, conflicts, conflict_resolution
+        )
 
         aggregated = AggregatedResult(
             query=query,
@@ -104,12 +112,14 @@ class ResultAggregator:
         conflict_resolution: str,
     ) -> str:
         """Build prompt for LLM to synthesize results."""
-        prompt = f"""Synthesize the following subagent results into a comprehensive answer for: {query}
-
-Subagent Results:
-"""
+        prompt = (
+            f"Synthesize the following subagent results into a comprehensive "
+            f"answer for: {query}\n\nSubagent Results:\n"
+        )
         for i, r in enumerate(results):
-            prompt += f"\n--- Subagent {r['subagent_id']} ---\nTask: {r['task']}\nResult: {r['result']}\n"
+            prompt += (
+                f"\n--- Subagent {r['subagent_id']} ---\nTask: {r['task']}\nResult: {r['result']}\n"
+            )
 
         if conflicts:
             prompt += "\nConflicts Detected:\n"

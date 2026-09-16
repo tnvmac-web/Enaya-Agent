@@ -17,11 +17,14 @@ from PIL import Image
 # Vision Provider Interface
 # =============================================================================
 
+
 class VisionProvider(ABC):
     """Abstract vision provider."""
 
     @abstractmethod
-    async def analyze(self, image: Image.Image, prompt: str = "Describe this image in detail.") -> str:
+    async def analyze(
+        self, image: Image.Image, prompt: str = "Describe this image in detail."
+    ) -> str:
         """Analyze image with prompt."""
         pass
 
@@ -40,11 +43,13 @@ class VisionProvider(ABC):
 # OpenAI Vision Provider
 # =============================================================================
 
+
 class OpenAIVision(VisionProvider):
     """OpenAI GPT-4 Vision provider."""
 
     def __init__(self, api_key: str = None, model: str = "gpt-4o"):
         from openai import OpenAI
+
         self.client = OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
         self.model = model
 
@@ -54,7 +59,9 @@ class OpenAIVision(VisionProvider):
         image.save(buffer, format="PNG")
         return base64.b64encode(buffer.getvalue()).decode()
 
-    async def analyze(self, image: Image.Image, prompt: str = "Describe this image in detail.") -> str:
+    async def analyze(
+        self, image: Image.Image, prompt: str = "Describe this image in detail."
+    ) -> str:
         b64_image = self._image_to_base64(image)
 
         response = self.client.chat.completions.create(
@@ -78,7 +85,9 @@ class OpenAIVision(VisionProvider):
         return response.choices[0].message.content
 
     async def extract_text(self, image: Image.Image) -> str:
-        return await self.analyze(image, "Extract all text from this image. Return only the text content.")
+        return await self.analyze(
+            image, "Extract all text from this image. Return only the text content."
+        )
 
     async def answer_question(self, image: Image.Image, question: str) -> str:
         return await self.analyze(image, question)
@@ -88,11 +97,13 @@ class OpenAIVision(VisionProvider):
 # Anthropic Vision Provider
 # =============================================================================
 
+
 class AnthropicVision(VisionProvider):
     """Anthropic Claude Vision provider."""
 
     def __init__(self, api_key: str = None, model: str = "claude-3-5-sonnet-20241022"):
         import anthropic
+
         self.client = anthropic.Anthropic(api_key=api_key or os.environ.get("ANTHROPIC_TOKEN"))
         self.model = model
 
@@ -101,7 +112,9 @@ class AnthropicVision(VisionProvider):
         image.save(buffer, format="PNG")
         return base64.b64encode(buffer.getvalue()).decode()
 
-    async def analyze(self, image: Image.Image, prompt: str = "Describe this image in detail.") -> str:
+    async def analyze(
+        self, image: Image.Image, prompt: str = "Describe this image in detail."
+    ) -> str:
         b64_image = self._image_to_base64(image)
 
         response = self.client.messages.create(
@@ -127,7 +140,9 @@ class AnthropicVision(VisionProvider):
         return response.content[0].text
 
     async def extract_text(self, image: Image.Image) -> str:
-        return await self.analyze(image, "Extract all text from this image. Return only the text content.")
+        return await self.analyze(
+            image, "Extract all text from this image. Return only the text content."
+        )
 
     async def answer_question(self, image: Image.Image, question: str) -> str:
         return await self.analyze(image, question)
@@ -137,6 +152,7 @@ class AnthropicVision(VisionProvider):
 # Local Vision (using CLIP/other models)
 # =============================================================================
 
+
 class LocalVision(VisionProvider):
     """Local vision using CLIP/transformers."""
 
@@ -144,6 +160,7 @@ class LocalVision(VisionProvider):
         try:
             import torch
             from transformers import CLIPModel, CLIPProcessor
+
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
             self.model = CLIPModel.from_pretrained(model_name).to(self.device)
             self.processor = CLIPProcessor.from_pretrained(model_name)
@@ -151,7 +168,9 @@ class LocalVision(VisionProvider):
         except ImportError:
             raise RuntimeError("transformers not installed. Run: pip install transformers torch")
 
-    async def analyze(self, image: Image.Image, prompt: str = "Describe this image in detail.") -> str:
+    async def analyze(
+        self, image: Image.Image, prompt: str = "Describe this image in detail."
+    ) -> str:
         # CLIP is for classification, not generation
         # This is a placeholder - real implementation would use a generative model
         inputs = self.processor(images=image, return_tensors="pt").to(self.device)
@@ -173,6 +192,7 @@ class LocalVision(VisionProvider):
 # Vision Manager
 # =============================================================================
 
+
 class VisionManager:
     """Manages vision analysis across providers."""
 
@@ -192,7 +212,7 @@ class VisionManager:
         else:
             try:
                 self.provider = LocalVision()
-            except:
+            except Exception:
                 pass
 
     def load_from_clipboard(self) -> bool:
@@ -203,17 +223,20 @@ class VisionManager:
             # On Linux, use xclip/xsel
             # On macOS, use pbpaste
             import platform
+
             system = platform.system()
 
             if system == "Windows":
                 try:
                     import win32clipboard
+
                     win32clipboard.OpenClipboard()
                     if win32clipboard.IsClipboardFormatAvailable(win32clipboard.CF_DIB):
                         data = win32clipboard.GetClipboardData(win32clipboard.CF_DIB)
                         import io
 
                         from PIL import Image
+
                         self._clipboard_image = Image.open(io.BytesIO(data))
                         win32clipboard.CloseClipboard()
                         return True
@@ -250,15 +273,23 @@ class VisionManager:
     def get_image(self) -> Image.Image | None:
         return self._clipboard_image
 
-    async def analyze(self, prompt: str = "Describe this image in detail.", image: Image.Image = None) -> str:
+    async def analyze(
+        self, prompt: str = "Describe this image in detail.", image: Image.Image = None
+    ) -> str:
         if not self.provider:
             self.auto_configure()
         if not self.provider:
-            return "No vision provider available. Set OPENAI_API_KEY, ANTHROPIC_TOKEN, or install transformers."
+            return (
+                "No vision provider available. Set OPENAI_API_KEY, "
+                "ANTHROPIC_TOKEN, or install transformers."
+            )
 
         image = image or self._clipboard_image
         if not image:
-            return "No image loaded. Use load_from_clipboard(), load_from_file(), or load_from_base64()."
+            return (
+                "No image loaded. Use load_from_clipboard(), "
+                "load_from_file(), or load_from_base64()."
+            )
 
         return await self.provider.analyze(image, prompt)
 
@@ -307,13 +338,24 @@ VISION_TOOL_SCHEMA = {
     "type": "function",
     "function": {
         "name": "vision",
-        "description": "Analyze images: describe, extract text, answer questions. Load from clipboard, file, or base64.",
+        "description": (
+            "Analyze images: describe, extract text, answer questions. "
+            "Load from clipboard, file, or base64."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["analyze", "extract_text", "answer_question", "load_clipboard", "load_file", "load_base64", "info"],
+                    "enum": [
+                        "analyze",
+                        "extract_text",
+                        "answer_question",
+                        "load_clipboard",
+                        "load_file",
+                        "load_base64",
+                        "info",
+                    ],
                     "description": "Action to perform",
                 },
                 "prompt": {"type": "string", "description": "Prompt for analysis"},
@@ -359,7 +401,9 @@ async def vision_tool(action: str, **kwargs) -> str:
         # Actions requiring loaded image
         image = manager.get_image()
         if not image:
-            return json.dumps({"error": "No image loaded. Use load_clipboard, load_file, or load_base64 first."})
+            return json.dumps(
+                {"error": "No image loaded. Use load_clipboard, load_file, or load_base64 first."}
+            )
 
         if action == "analyze":
             prompt = kwargs.get("prompt", "Describe this image in detail.")

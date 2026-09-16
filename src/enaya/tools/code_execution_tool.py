@@ -22,13 +22,24 @@ CODE_EXECUTION_SCHEMA = {
     "type": "function",
     "function": {
         "name": "execute_code",
-        "description": "Execute Python code in a sandboxed environment. Returns stdout, stderr, and return value.",
+        "description": (
+            "Execute Python code in a sandboxed environment. Returns "
+            "stdout, stderr, and return value."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
                 "code": {"type": "string", "description": "Python code to execute"},
-                "timeout": {"type": "integer", "description": "Execution timeout in seconds (default: 30)", "default": 30},
-                "capture_output": {"type": "boolean", "description": "Capture stdout/stderr (default: true)", "default": True},
+                "timeout": {
+                    "type": "integer",
+                    "description": "Execution timeout in seconds (default: 30)",
+                    "default": 30,
+                },
+                "capture_output": {
+                    "type": "boolean",
+                    "description": "Capture stdout/stderr (default: true)",
+                    "default": True,
+                },
             },
             "required": ["code"],
         },
@@ -44,7 +55,9 @@ def execute_code_tool(code: str, timeout: int = 30, capture_output: bool = True)
     """Execute Python code in a sandboxed subprocess."""
     try:
         # Create a temporary file for the code
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, prefix='enaya_exec_') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False, prefix="enaya_exec_"
+        ) as f:
             f.write(code)
             temp_file = f.name
 
@@ -58,34 +71,40 @@ def execute_code_tool(code: str, timeout: int = 30, capture_output: bool = True)
                 cwd=tempfile.gettempdir(),
             )
 
-            return json.dumps({
-                "success": result.returncode == 0,
-                "stdout": result.stdout,
-                "stderr": result.stderr,
-                "returncode": result.returncode,
-            })
+            return json.dumps(
+                {
+                    "success": result.returncode == 0,
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                    "returncode": result.returncode,
+                }
+            )
 
         except subprocess.TimeoutExpired:
-            return json.dumps({
-                "success": False,
-                "error": f"Code execution timed out after {timeout} seconds",
-                "stdout": "",
-                "stderr": "",
-                "returncode": -1,
-            })
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": f"Code execution timed out after {timeout} seconds",
+                    "stdout": "",
+                    "stderr": "",
+                    "returncode": -1,
+                }
+            )
         except Exception as e:
-            return json.dumps({
-                "success": False,
-                "error": str(e),
-                "stdout": "",
-                "stderr": "",
-                "returncode": -1,
-            })
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "stdout": "",
+                    "stderr": "",
+                    "returncode": -1,
+                }
+            )
         finally:
             # Clean up temp file
             try:
                 os.unlink(temp_file)
-            except:
+            except Exception:
                 pass
 
     except Exception as e:
